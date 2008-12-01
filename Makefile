@@ -6,7 +6,7 @@ PSQL	:= psql $(DBNAME)
 _all.sql: _redo.sql init.sql
 	cat $^ > $@
 
-_redo.sql: create.sql zero_insert.sql alter.sql functions.sql defaults.sql triggers.sql views.sql
+_redo.sql: create.sql zero_insert.sql alter.sql aggregate.sql functions.sql defaults.sql triggers.sql views.sql
 	cat $^ > $@
 
 recreate:
