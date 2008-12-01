@@ -723,6 +723,12 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION to_month (timestamp with time zone) RETURNS timestamp AS $$
 	SELECT date_trunc('month',coalesce($1,now())::timestamp);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp-'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_year () RETURNS timestamp AS $$
 	SELECT date_trunc('year',now()::timestamp);
 $$ LANGUAGE sql STABLE STRICT;
