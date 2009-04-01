@@ -120,6 +120,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- TAG2
+CREATE OR REPLACE FUNCTION tag2_before_insert_trigger () RETURNS "trigger" AS $$
+BEGIN
+	IF EXISTS (SELECT 1 FROM tag2 WHERE src_id=NEW.src_id AND dst_id=NEW.dst_id AND tag_id=NEW.tag_id) THEN
+		RETURN NULL;
+	END IF;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- LINK
 CREATE OR REPLACE FUNCTION link_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
@@ -156,9 +166,18 @@ CREATE TRIGGER value_delete_trigger		AFTER	DELETE	ON value	FOR EACH ROW EXECUTE 
 -- TAG
 CREATE TRIGGER tag_before_insert_trigger	BEFORE	INSERT	ON tag		FOR EACH ROW EXECUTE PROCEDURE tag_before_insert_trigger();
 
+-- TAG2
+CREATE TRIGGER tag2_before_insert_trigger	BEFORE	INSERT	ON tag2		FOR EACH ROW EXECUTE PROCEDURE tag2_before_insert_trigger();
+
 -- LINK
 CREATE TRIGGER link_before_insert_trigger	BEFORE	INSERT	ON link		FOR EACH ROW EXECUTE PROCEDURE link_before_insert_trigger();
 CREATE TRIGGER odb_after_update_trigger		AFTER	UPDATE	ON link		FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
 CREATE TRIGGER odb_before_change_trigger BEFORE UPDATE OR DELETE ON link	FOR EACH ROW EXECUTE PROCEDURE odb_before_change_trigger();
 CREATE TRIGGER odb_after_delete_trigger		AFTER	DELETE	ON link		FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
+
+-- BLACKLIST
+CREATE TRIGGER odb_before_insert_trigger	BEFORE	INSERT	ON blacklist	FOR EACH ROW EXECUTE PROCEDURE odb_before_insert_trigger();
+CREATE TRIGGER odb_after_update_trigger		AFTER	UPDATE	ON blacklist	FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
+CREATE TRIGGER odb_before_delete_trigger	BEFORE	DELETE	ON blacklist	FOR EACH ROW EXECUTE PROCEDURE odb_before_delete_trigger();
+CREATE TRIGGER odb_after_delete_trigger		AFTER	DELETE	ON blacklist	FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
 
