@@ -2,6 +2,7 @@
 -- BASIC CLASSES
 SELECT set_ref('scalar',		'{lang:Scalar}');
 SELECT set_ref('type',			'{lang:Type}');
+SELECT set_ref('tag',			'{lang:Tag}');
 SELECT set_ref('state',			'{lang:State}');
 SELECT set_ref('class',			'{lang:Class}');
 SELECT set_ref('class,prop',		'{lang:Property}');
@@ -22,6 +23,7 @@ SELECT set_ref('scalar,password',	'{lang:password}');
 SELECT set_ref('scalar,textarea',	'{lang:textarea}');
 SELECT set_ref('scalar,ip',		'{lang:ip}');
 SELECT set_ref('scalar,ips',		'{lang:ips}');
+SELECT set_ref('scalar,nets',		'{lang:nets}');
 SELECT set_ref('scalar,mac',		'{lang:mac}');
 SELECT set_ref('scalar,email',		'{lang:email}');
 SELECT set_ref('scalar,emails',		'{lang:emails}');
@@ -43,8 +45,25 @@ SELECT set_prop( 2,'prop:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NUL
 SELECT set_prop( 3,'prop:type_id',	class_id('ref'),	'{lang:Type}',		NULL,	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 4,'prop:no',		scalar_id('no'),	'{lang:No.}',		'0',	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 0,'prop:trigger',	scalar_id('name'),	'{lang:Trigger}');
+SELECT set_prop( 0,'prop:asterisk',	scalar_id('boolean'),	'{lang:Asterisk}',	'f');
+SELECT set_prop( 0,'prop:input_additional_html',scalar_id('text'),'Additional html',	'');
 
 -- OBJECT_NAMEs
 SELECT set_value(class_id('ref'),	'class:object_name',	'ref_full_name(obj_id)');
 SELECT set_value(class_id('prop'),	'class:object_name',	'class_full_name(class_id)||'':''||name');
+
+-- PRIORITIES
+SELECT set_ref( 0,'type,priority',			'{lang:Priority}');
+SELECT set_ref( 1,'type,priority,low',			'{lang:Low}');
+SELECT set_ref( 2,'type,priority,medium',		'{lang:Medium}');
+SELECT set_ref( 3,'type,priority,high',			'{lang:High}');
+SELECT set_ref( 4,'type,priority,ultrahigh',		'{lang:Ultrahigh}');
+
+-- GRADES
+SELECT set_ref( 0,'type,grade',				'{lang:Grade}');
+SELECT set_ref( 1,'type,grade,terrible',		'{lang:Terrible}');
+SELECT set_ref( 2,'type,grade,bad',			'{lang:Bad}');
+SELECT set_ref( 3,'type,grade,ok',			'{lang:O.k.}');
+SELECT set_ref( 4,'type,grade,good',			'{lang:Good}');
+SELECT set_ref( 5,'type,grade,excellent',		'{lang:Excellent}');
 
