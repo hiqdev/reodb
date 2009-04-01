@@ -26,11 +26,11 @@ CREATE OR REPLACE VIEW state_h AS
 ;
 
 CREATE OR REPLACE VIEW prop_h AS
-	SELECT		obj_id,no,class_full_name(p.class_id) AS class,name AS prop,ref_full_name(type_id) AS type,
+	SELECT		obj_id,no,class_full_name(p.class_id) AS class,name,ref_full_name(type_id) AS type,
 			to_sign(is_t)||to_sign(is_n)||to_sign(is_s)||to_sign(is_r) AS TNSR,label,def
 	FROM		prop	p
 	LEFT JOIN	obj	o USING (obj_id)
-	ORDER BY	class,no,prop
+	ORDER BY	class,no
 ;
 
 CREATE OR REPLACE VIEW value_h AS
@@ -42,5 +42,12 @@ CREATE OR REPLACE VIEW value_h AS
 	FROM		value	v
 	LEFT JOIN	obj	o USING (obj_id)
 	ORDER BY	class,name,prop,no
+;
+
+-- BLACKLIST
+CREATE OR REPLACE VIEW blacklist_h AS
+	SELECT		b.obj_id,t.name AS class,object_full_name(b.user_id) AS user,b.name,to_sign(b.for_myself) AS for_myself
+	FROM		blacklist	b
+	LEFT JOIN	ref		t ON t.obj_id=b.class_id
 ;
 
