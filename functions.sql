@@ -1,8 +1,29 @@
 -- $Header: /home/sol/usr/cvs/reodb/functions.sql,v 1.3 2007/08/31 11:16:18 sol Exp $
 
-----------------------------
+-- REPLACE
+CREATE TYPE replace_data AS (keys text,vals text,sets text);
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||$3 END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||$3::text END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value text) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||quote_literal($3) END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value timestamp) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||quote_literal($3::text) END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
 -- DIFF
-----------------------------
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
 	SELECT CASE WHEN length($1)>0 THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
@@ -14,6 +35,12 @@ CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle text,previous integ
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle text) RETURNS integer AS $$
 	SELECT CASE WHEN strpos($1,$2)>0 THEN last_strpos(substr($1,strpos($1,$2)+1),$2,strpos($1,$2)) ELSE 0 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ucf (text) RETURNS text AS $$
+	SELECT upper(substr($1,1,1))||substr($1,2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_html (text) RETURNS text AS $$
+        SELECT replace(replace(replace($1,'>','&gt;'),'<','&lt;'),E'\n','<br>');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
@@ -28,7 +55,7 @@ CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
--- GET OBJECT CLASS
+-- GET OBJECT CLASS/STATE
 ----------------------------
 CREATE OR REPLACE FUNCTION get_obj_class_id (a_obj_id integer) RETURNS integer AS $$
 	SELECT class_id FROM obj WHERE obj_id = $1;
@@ -36,6 +63,26 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_class (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_state_id (a_obj_id integer) RETURNS integer AS $$
+DECLARE
+	res integer;
+BEGIN
+	EXECUTE 'SELECT state_id FROM '|| (
+		SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
+	) ||' WHERE obj_id='||a_obj_id INTO res;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_state (a_obj_id integer) RETURNS text AS $$
+DECLARE
+	res text;
+BEGIN
+	EXECUTE 'SELECT name FROM ref WHERE obj_id=(SELECT state_id FROM '|| (
+		SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
+	) ||' WHERE obj_id='||a_obj_id||')' INTO res;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
@@ -123,7 +170,7 @@ CREATE OR REPLACE FUNCTION ref_full_name (integer,integer) RETURNS text AS $$
 	SELECT CASE WHEN _id=0 OR _id=$2 THEN name ELSE ref_full_name(_id)||','||name END
 	FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text,a_descr text) RETURNS integer AS $$
 DECLARE
 	the_id	integer := ref_id(a_ref);
 	pos	integer;
@@ -135,12 +182,20 @@ BEGIN
 	ELSE
 		UPDATE ref SET no=a_no WHERE obj_id=the_id;
 	END IF;
-	PERFORM set_obj_label(the_id,a_label);
+	IF a_label IS NOT NULL THEN
+		PERFORM set_obj_label(the_id,a_label);
+	END IF;
+	IF a_descr IS NOT NULL THEN
+		PERFORM set_obj_descr(the_id,a_descr);
+	END IF;
 	RETURN the_id;
 END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text) RETURNS integer AS $$
+	SELECT set_ref($1,$2,$3,NULL);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS integer AS $$
-	SELECT set_ref(0,$1,$2);
+	SELECT set_ref(0,$1,$2,NULL);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
@@ -238,66 +293,57 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION prop_full_name (integer) RETURNS text AS $$
 	SELECT class_full_name(class_id)||':'||name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_prop (
-	a_no		integer,
-	a_prop		text,
-	a_type_id	integer,
-	a_label		text,
-	a_def		text,
-	a_is_t		boolean,
-	a_is_n		boolean,
-	a_is_s		boolean,
-	a_is_r		boolean
+CREATE OR REPLACE FUNCTION replace_prop (
+	a_obj_id	integer,	-- $1
+	a_class_id	integer,	-- $2
+	a_name		text,		-- $3
+	a_type_id	integer,	-- $4
+	a_no		integer,	-- $5
+	a_def		text,		-- $6
+	a_is_t		boolean,	-- $7
+	a_is_n		boolean,	-- $8
+	a_is_s		boolean,	-- $9
+	a_is_r		boolean,	-- $10
+	a_label		text		-- $11
 ) RETURNS integer AS $$
 DECLARE
-	the_id	integer := prop_id(a_prop);
-	pos	integer;
-	keys	text	:= 'obj_id,class_id,name,type_id';
-	vals	text	:= '';
-	sets	text	:= 'type_id='||a_type_id;
+	the_id	integer := coalesce(a_obj_id,nextval('id'));
+	prep	replace_data;
 BEGIN
-	IF a_no IS NOT NULL THEN
-		keys := keys || ',no';
-		vals := vals || ','||a_no;
-		sets := sets || ',no='||a_no;
-	END IF;
-	IF a_def IS NOT NULL THEN
-		keys := keys || ',def';
-		vals := vals || ','||quote_literal(a_def);
-		sets := sets || ',def='||quote_literal(a_def);
-	END IF;
-	IF a_is_t IS NOT NULL THEN
-		keys := keys || ',is_t';
-		vals := vals || ','||to_bool(a_is_t);
-		sets := sets || ',is_t='||to_bool(a_is_t);
-	END IF;
-	IF a_is_n IS NOT NULL THEN
-		keys := keys || ',is_n';
-		vals := vals || ','||to_bool(a_is_n);
-		sets := sets || ',is_n='||to_bool(a_is_n);
-	END IF;
-	IF a_is_s IS NOT NULL THEN
-		keys := keys || ',is_s';
-		vals := vals || ','||to_bool(a_is_s);
-		sets := sets || ',is_s='||to_bool(a_is_s);
-	END IF;
-	IF a_is_r IS NOT NULL THEN
-		keys := keys || ',is_r';
-		vals := vals || ','||to_bool(a_is_r);
-		sets := sets || ',is_r='||to_bool(a_is_r);
-	END IF;
-	IF the_id IS NULL THEN
-		the_id	:= nextval('id');
-		pos	:= strpos(a_prop,':');
-		vals	:= the_id||','||class_id(substr(a_prop,0,pos))||','||quote_literal(substr(a_prop,pos+1))||','||a_type_id||vals;
-		EXECUTE 'INSERT INTO prop ('||keys||') VALUES ('||vals||')';
+	prep := ('obj_id',the_id::text,NULL);
+	prep := prepare_replace(prep,'class_id',	a_class_id);
+	prep := prepare_replace(prep,'name',		a_name);
+	prep := prepare_replace(prep,'type_id',		a_type_id);
+	prep := prepare_replace(prep,'no',		a_no);
+	prep := prepare_replace(prep,'def',		a_def);
+	prep := prepare_replace(prep,'is_t',		a_is_t);
+	prep := prepare_replace(prep,'is_n',		a_is_n);
+	prep := prepare_replace(prep,'is_s',		a_is_s);
+	prep := prepare_replace(prep,'is_r',		a_is_r);
+	IF NOT EXISTS (SELECT 1 FROM prop WHERE obj_id=the_id) THEN
+		EXECUTE 'INSERT INTO prop ('||prep.keys||') VALUES ('||prep.vals||')';
 	ELSE
-		EXECUTE 'UPDATE prop SET '||sets||' WHERE obj_id='||the_id;
+		EXECUTE 'UPDATE prop SET '||prep.sets||' WHERE obj_id='||the_id;
 	END IF;
-	PERFORM set_obj_label(the_id,a_label);
+	IF a_label IS NOT NULL THEN
+		PERFORM set_obj_label(the_id,a_label);
+	END IF;
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_prop (
+	a_no		integer,	-- $1
+	a_prop		text,		-- $2
+	a_type_id	integer,	-- $3
+	a_label		text,		-- $4
+	a_def		text,		-- $5
+	a_is_t		boolean,	-- $6
+	a_is_n		boolean,	-- $7
+	a_is_s		boolean,	-- $8
+	a_is_r		boolean		-- $9
+) RETURNS integer AS $$
+	SELECT replace_prop(prop_id($2),class_id(substr($2,0,strpos($2,':'))),substr($2,strpos($2,':')+1),$3,$1,$5,$6,$7,$8,$9,$4);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_prop (a_no integer,a_prop text,a_type_id integer,a_label text,a_def text) RETURNS integer AS $$
 	SELECT set_prop($1,$2,$3,$4,$5,null,null,null,null);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -571,7 +617,7 @@ BEGIN
 			ELSE
 				field := substr(a_path,0,pos);
 			END IF;
-			class := object_class(a_obj_id);
+			class := get_obj_class(a_obj_id);
 			EXECUTE 'SELECT '||field||' FROM '||class||' WHERE obj_id='||a_obj_id INTO n_obj_id;
 		END IF;
 		IF pos>0 THEN
@@ -612,6 +658,9 @@ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 -- TAG
 ----------------------------
+CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
+	SELECT ref_id($1,top_ref_id('tag'));
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS void AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -740,11 +789,12 @@ CREATE OR REPLACE FUNCTION days_in_month (timestamp with time zone) RETURNS inte
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION days2quantity (a_day timestamp with time zone,a_month timestamp with time zone) RETURNS double precision AS $$
 	SELECT CASE
+		WHEN $1 IS NULL THEN 1
 		WHEN to_month($1)>to_month($2) THEN 0
 		WHEN to_month($1)<to_month($2) THEN 1
 		ELSE 1-(date_part('day',$1)-1)/days_in_month($1)
 	END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp with time zone) RETURNS integer AS $$
 	SELECT round($1*days_in_month($2))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -848,4 +898,11 @@ CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double pre
 			          ELSE $2 != $3
 		END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- LOG
+----------------------------
+----------------------------
+-- LOG_VAR
+----------------------------
 
