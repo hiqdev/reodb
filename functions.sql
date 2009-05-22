@@ -42,6 +42,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_html (text) RETURNS text AS $$
         SELECT replace(replace(replace($1,'>','&gt;'),'<','&lt;'),E'\n','<br>');
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION genpass (length integer) RETURNS text AS $$
+	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,$1);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION genpass () RETURNS text AS $$
+	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
+$$ LANGUAGE sql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --	'/www/rcp3/src/sql/last_strpos','last_strpos'
