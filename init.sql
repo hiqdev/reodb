@@ -4,6 +4,7 @@ SELECT set_ref('scalar',		'{lang:Scalar}');
 SELECT set_ref('type',			'{lang:Type}');
 SELECT set_ref('tag',			'{lang:Tag}');
 SELECT set_ref('state',			'{lang:State}');
+SELECT set_ref('status',		'{lang:Status}');
 SELECT set_ref('class',			'{lang:Class}');
 SELECT set_ref('class,prop',		'{lang:Property}');
 
