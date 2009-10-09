@@ -270,6 +270,19 @@ CREATE OR REPLACE FUNCTION state_full_name (integer) RETURNS text AS $$
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
+-- STATUS
+----------------------------
+CREATE OR REPLACE FUNCTION status_id (text) RETURNS integer AS $$
+	SELECT ref_id($1,top_ref_id('status'));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION status_id (text,text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('status',$1);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION status_full_name (integer) RETURNS text AS $$
+	SELECT ref_full_name($1,top_ref_id('status'));
+$$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
 -- PROP
 ----------------------------
 CREATE OR REPLACE FUNCTION prop_id (a_prop text) RETURNS integer AS $$
@@ -480,6 +493,11 @@ $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS void AS $$
 BEGIN
 	PERFORM set_value(a_obj_id,prop_id(a_prop),a_value);
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value integer) RETURNS void AS $$
+BEGIN
+	PERFORM set_value(a_obj_id,prop_id(a_prop),a_value::text);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_class text,a_prop text,a_value text) RETURNS void AS $$
