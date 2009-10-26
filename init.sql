@@ -47,7 +47,8 @@ SELECT set_prop( 3,'prop:type_id',	class_id('ref'),	'{lang:Type}',		NULL,	TRUE,N
 SELECT set_prop( 4,'prop:no',		scalar_id('no'),	'{lang:No.}',		'0',	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 0,'prop:trigger',	scalar_id('name'),	'{lang:Trigger}');
 SELECT set_prop( 0,'prop:asterisk',	scalar_id('boolean'),	'{lang:Asterisk}',	'f');
-SELECT set_prop( 0,'prop:input_additional_html',scalar_id('text'),'Additional html',	'');
+SELECT set_prop( 0,'prop:comment',	scalar_id('text'),	'{lang:Comment}',	'');
+SELECT set_prop( 0,'prop:before_html',	scalar_id('text'),	'Additional html before input',	'');
 
 -- OBJECT_NAMEs
 SELECT set_value(class_id('ref'),	'class:object_name',	'ref_full_name(obj_id)');
