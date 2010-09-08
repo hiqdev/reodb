@@ -43,6 +43,15 @@ CREATE TABLE value (
 );
 SELECT * INTO del_value FROM value LIMIT 0;
 
+CREATE TABLE old_value (
+	obj_id		integer,
+	prop_id		integer,
+	no		integer,
+	value		text,
+	old_time	timestamp,
+	user_id		integer
+);
+
 CREATE TABLE user_value (
 	id		integer		NOT NULL DEFAULT nextval('id'),
 	obj_id		integer		NOT NULL,
