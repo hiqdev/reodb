@@ -66,6 +66,25 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION genpass () RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
+	SELECT CASE WHEN $1 ~ E'^[-+]?\\d*\\.?\\d*$' THEN $1::numeric ELSE $2 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION str2num (a text) RETURNS numeric AS $$
+	SELECT CASE WHEN $1 ~ E'^[-+]?\\d*\\.?\\d*$' THEN $1::numeric ELSE 0 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION str2time (a text) RETURNS timestamp AS $$
+DECLARE
+	t timestamp;
+BEGIN
+	BEGIN
+		SELECT INTO t a::timestamp;
+	EXCEPTION
+		WHEN OTHERS THEN
+			-- do nothing
+	END;
+	RETURN t;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --	'/www/rcp3/src/sql/last_strpos','last_strpos'
@@ -141,6 +160,9 @@ CREATE OR REPLACE FUNCTION set_obj_create_time (a_obj_id integer,a_create_time t
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer,a_update_time timestamp) RETURNS void AS $$
 	UPDATE obj SET update_time=$2 WHERE obj_id = $1;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer) RETURNS void AS $$
+	UPDATE obj SET update_time='now' WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
@@ -486,7 +508,7 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 ----------------------------
 -- SET VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS integer AS $$
 DECLARE
 	the_id	integer;
 	the_def	text;
@@ -503,34 +525,38 @@ BEGIN
 		ELSIF the_id IS NOT NULL THEN
 			UPDATE value SET value=a_value WHERE id=the_id;
 		ELSE
-			INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value);
+			INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
+			RETURNING id INTO the_id;
 		END IF;
 	END IF;
+	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
-	PERFORM set_value(a_obj_id,prop_id(a_prop),a_value);
+	RETURN set_value(a_obj_id,prop_id(a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value integer) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value integer) RETURNS integer AS $$
 BEGIN
-	PERFORM set_value(a_obj_id,prop_id(a_prop),a_value::text);
+	RETURN set_value(a_obj_id,prop_id(a_prop),a_value::text);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_class text,a_prop text,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_class text,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
-	PERFORM set_value(a_obj_id,prop_id(a_class,a_prop),a_value);
+	RETURN set_value(a_obj_id,prop_id(a_class,a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
-CREATE OR REPLACE FUNCTION set_value_if_not (a_obj_id integer,a_prop text,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value_if_not (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM value WHERE obj_id=a_obj_id AND prop_id=prop_id(a_prop)) THEN
-		PERFORM set_value(a_obj_id,a_prop,a_value);
+		RETURN set_value(a_obj_id,a_prop,a_value);
+	ELSE
+		RETURN NULL;
 	END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer,a_value text) RETURNS integer AS $$
 DECLARE
 	the_id	integer;
 	the_def	text;
@@ -547,9 +573,11 @@ BEGIN
 		ELSIF the_id IS NOT NULL THEN
 			UPDATE value SET value=a_value WHERE id=the_id;
 		ELSE
-			INSERT INTO value (obj_id,prop_id,no,value) VALUES (a_obj_id,a_prop_id,a_no,a_value);
+			INSERT INTO value (obj_id,prop_id,no,value) VALUES (a_obj_id,a_prop_id,a_no,a_value)
+			RETURNING id INTO the_id;
 		END IF;
 	END IF;
+	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_values (a_obj_id integer,a_prop_id integer,a_values text) RETURNS void AS $$
@@ -577,6 +605,13 @@ CREATE OR REPLACE FUNCTION delete_value (a_obj_id integer,a_class text,a_prop te
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION delete_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS void AS $$
 	DELETE FROM value WHERE obj_id = $1 AND prop_id = $2 AND no = $3;
+$$ LANGUAGE sql VOLATILE STRICT;
+
+----------------------------
+-- DELETE VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION verify_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
+	SELECT CASE WHEN get_value($1,$2)=$3 THEN set_value($1,$2||'_verified',$3) END;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
@@ -625,6 +660,18 @@ BEGIN
 	PERFORM insert_value(a_obj_id,prop_id(a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+
+----------------------------
+-- SET OLD VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id integer,a_prop_id integer,a_value text,a_user_id integer) RETURNS integer AS $$
+	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,$2,$3,now(),$4);
+	SELECT $1;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id integer,a_prop text,a_value text,a_user_id integer) RETURNS integer AS $$
+	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,prop_id($2),$3,now(),$4);
+	SELECT $1;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- IN VALUES
@@ -905,8 +952,8 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION from_cents (a_cents double precision) RETURNS numeric AS $$
 	SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc(($1/100)::numeric,2) END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_cents(double precision) RETURNS double precision AS $$
-	SELECT $1 * 100;
+CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
+	SELECT trunc($1 * 100)::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -917,6 +964,9 @@ CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
 	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN 't' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_yes (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 'yes' END;
