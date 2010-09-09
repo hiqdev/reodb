@@ -46,7 +46,7 @@ SELECT set_prop( 2,'prop:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NUL
 SELECT set_prop( 3,'prop:type_id',	class_id('ref'),	'{lang:Type}',		NULL,	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 4,'prop:no',		scalar_id('no'),	'{lang:No.}',		'0',	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 0,'prop:save_history',	scalar_id('boolean'),	'{lang:Save history}',	'f');
-SELECT set_prop( 0,'prop:trigger',	scalar_id('name'),	'{lang:Trigger}');
+SELECT set_prop( 0,'prop:trigger',	scalar_id('name'),	'{lang:Trigger}',	'');
 SELECT set_prop( 0,'prop:asterisk',	scalar_id('boolean'),	'{lang:Asterisk}',	'f');
 SELECT set_prop( 0,'prop:separator',	scalar_id('boolean'),	'{lang:Separator}',	'f');
 SELECT set_prop( 0,'prop:comment',	scalar_id('text'),	'{lang:Comment}',	'');
@@ -54,6 +54,7 @@ SELECT set_prop( 0,'prop:readonly',	scalar_id('boolean'),	'{lang:Readonly}',	'f'
 SELECT set_prop( 0,'prop:admin_only',	scalar_id('boolean'),	'{lang:Admin only}',	'f');
 SELECT set_prop( 0,'prop:owner_only',	scalar_id('boolean'),	'{lang:Owner only}',	'f');
 SELECT set_prop( 0,'prop:disabled',	scalar_id('boolean'),	'{lang:Disabled}',	'f');
+SELECT set_prop( 0,'prop:hidden',	scalar_id('boolean'),	'{lang:Hidden}',	'f');
 SELECT set_prop( 0,'prop:before_html',	scalar_id('text'),	'Additional html before input',	'');
 
 -- OBJECT_NAMEs
