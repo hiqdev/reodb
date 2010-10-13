@@ -29,6 +29,7 @@ SELECT set_ref('scalar,mac',		'{lang:mac}');
 SELECT set_ref('scalar,email',		'{lang:email}');
 SELECT set_ref('scalar,emails',		'{lang:emails}');
 SELECT set_ref('scalar,domain',		'{lang:domain}');
+SELECT set_ref('scalar,domains',	'{lang:domains}');
 SELECT set_ref('scalar,filtertext',	'{lang:filter text}');
 SELECT set_ref('scalar,label',		'{lang:label}');
 
