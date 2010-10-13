@@ -4,7 +4,9 @@ prop
 value
 user_value
 tag
+tag2
 link
+status
 
 blacklist
 wrong_login
