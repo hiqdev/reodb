@@ -36,7 +36,7 @@ SELECT set_ref('scalar,label',		'{lang:label}');
 -- PROPS
 SELECT set_prop( 1,'class:label',	scalar_id('text'),	'{lang:Label}',		'',	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 2,'class:descr',	scalar_id('textarea'),	'{lang:Description}',	'',	TRUE,NULL,NULL,NULL);
-SELECT set_prop( 0,'class:object_name',	scalar_id('text'),	'{lang:Object name}',	'');
+SELECT set_prop( 0,'class:obj_name',	scalar_id('text'),	'{lang:Object name}',	'');
 
 SELECT set_prop( 1,'ref:_id',		class_id('ref'),	'{lang:Parent}',	NULL,	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 2,'ref:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NULL,NULL,NULL);
@@ -59,8 +59,8 @@ SELECT set_prop( 0,'prop:hidden',	scalar_id('boolean'),	'{lang:Hidden}',	'f');
 SELECT set_prop( 0,'prop:before_html',	scalar_id('text'),	'Additional html before input',	'');
 
 -- OBJECT_NAMEs
-SELECT set_value(class_id('ref'),	'class:object_name',	'ref_full_name(obj_id)');
-SELECT set_value(class_id('prop'),	'class:object_name',	'class_full_name(class_id)||'':''||name');
+SELECT set_value(class_id('ref'),	'class:obj_name',	'ref_full_name(obj_id)');
+SELECT set_value(class_id('prop'),	'class:obj_name',	'class_full_name(class_id)||'':''||name');
 
 -- PRIORITIES
 SELECT set_ref( 0,'type,priority',			'{lang:Priority}');

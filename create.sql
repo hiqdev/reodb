@@ -91,7 +91,7 @@ CREATE TABLE status (
 	type_id		bigint		NOT NULL,
 	time		timestamp	NOT NULL DEFAULT now()
 );
-SELECT now()::timestamp without time zone AS old_time,* INTO old_link FROM link limit 0;
+SELECT now()::timestamp without time zone AS old_time,* INTO old_status FROM status limit 0;
 
 CREATE TABLE blacklist (
 	obj_id		bigint		NOT NULL,

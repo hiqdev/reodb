@@ -45,10 +45,10 @@ CREATE INDEX			value_obj_id_idx				ON value (obj_id);
 CREATE INDEX			value_prop_id_idx				ON value (prop_id);
 
 -- USER VALUE
-ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_no_obj_id_user_id_prop_id_uniq UNIQUE (no,obj_id,user_id,prop_id);
+ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_no_obj_id_subject_id_prop_id_uniq UNIQUE (no,obj_id,subject_id,prop_id);
 ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_obj_id_fkey		FOREIGN KEY (obj_id)	REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_user_id_fkey		FOREIGN KEY (user_id)	REFERENCES obj (obj_id)
+ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_subject_id_fkey	FOREIGN KEY (subject_id) REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_prop_id_fkey		FOREIGN KEY (prop_id)	REFERENCES prop (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
@@ -93,10 +93,10 @@ ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_fkey		FOREIGN KEY (cl
 										ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_user_id_fkey		FOREIGN KEY (user_id)	REFERENCES obj (obj_id)
+ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_subject_id_fkey	FOREIGN KEY (subject_id) REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
 CREATE INDEX			blacklist_class_id_idx				ON blacklist (class_id);
-CREATE INDEX			blacklist_user_id_idx				ON blacklist (user_id);
+CREATE INDEX			blacklist_subject_id_idx			ON blacklist (subject_id);
 
 -- WRONG LOGIN
 -- LOG
