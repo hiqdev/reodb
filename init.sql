@@ -6,7 +6,10 @@ SELECT set_ref('tag',			'{lang:Tag}');
 SELECT set_ref('state',			'{lang:State}');
 SELECT set_ref('status',		'{lang:Status}');
 SELECT set_ref('class',			'{lang:Class}');
+SELECT set_ref('class,ref',		'{lang:Reference}');
 SELECT set_ref('class,prop',		'{lang:Property}');
+SELECT set_ref('class,link',		'{lang:Link}');
+SELECT set_ref('class,blacklist',	'{lang:Blacklist}');
 
 -- SCALARS
 SELECT set_ref('scalar,integer',	'{lang:integer}');
@@ -42,13 +45,19 @@ SELECT set_prop( 1,'ref:_id',		class_id('ref'),	'{lang:Parent}',	NULL,	TRUE,NULL
 SELECT set_prop( 2,'ref:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NULL,NULL,NULL);
 SELECT set_prop( 3,'ref:no',		scalar_id('no'),	'{lang:No.}',		'0',	TRUE,NULL,NULL,NULL);
 
-SELECT set_prop( 1,'prop:class_id',	class_id('ref'),	'{lang:Class}',		NULL,	TRUE,NULL,NULL,NULL);
-SELECT set_prop( 2,'prop:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NULL,NULL,NULL);
-SELECT set_prop( 3,'prop:type_id',	class_id('ref'),	'{lang:Type}',		NULL,	TRUE,NULL,NULL,NULL);
+SELECT set_prop( 1,'prop:class_id',	class_id('ref'),	'{lang:Class}',		NULL,	TRUE,NULL,TRUE,NULL);
+SELECT set_prop( 2,'prop:name',		scalar_id('name'),	'{lang:Name}',		'',	TRUE,NULL,TRUE,NULL);
+SELECT set_prop( 3,'prop:type_id',	class_id('ref'),	'{lang:Type}',		NULL,	TRUE,NULL,TRUE,NULL);
 SELECT set_prop( 4,'prop:no',		scalar_id('no'),	'{lang:No.}',		'0',	TRUE,NULL,NULL,NULL);
-SELECT set_prop( 0,'prop:save_history',	scalar_id('boolean'),	'{lang:Save history}',	'f');
-SELECT set_prop( 0,'prop:trigger',	scalar_id('name'),	'{lang:Trigger}',	'');
-SELECT set_prop( 0,'prop:asterisk',	scalar_id('boolean'),	'{lang:Asterisk}',	'f');
+SELECT set_prop( 5,'prop:def',		scalar_id('label'),	'{lang:Default value}',	'',	TRUE,TRUE,NULL,NULL);
+SELECT set_prop(11,'prop:is_in_table',	scalar_id('boolean'),	'{lang:Is in table}',	'f',	TRUE,NULL,NULL,NULL);
+SELECT set_prop(12,'prop:can_be_null',	scalar_id('boolean'),	'{lang:Can be null}',	'f',	TRUE,NULL,NULL,NULL);
+SELECT set_prop(13,'prop:is_required',	scalar_id('boolean'),	'{lang:Is required}',	'f',	TRUE,NULL,NULL,NULL);
+SELECT set_prop(14,'prop:is_repeated',	scalar_id('boolean'),	'{lang:Is repeated}',	'f',	TRUE,NULL,NULL,NULL);
+SELECT set_prop(21,'prop:save_history',	scalar_id('boolean'),	'{lang:Save history}',	'f',	TRUE,NULL,NULL,NULL);
+SELECT set_prop(22,'prop:insert_trigger',scalar_id('name'),	'{lang:Insert trigger}','',	TRUE,TRUE,NULL,NULL);
+SELECT set_prop(23,'prop:update_trigger',scalar_id('name'),	'{lang:Update trigger}','',	TRUE,TRUE,NULL,NULL);
+SELECT set_prop(24,'prop:delete_trigger',scalar_id('name'),	'{lang:Delete trigger}','',	TRUE,TRUE,NULL,NULL);
 SELECT set_prop( 0,'prop:separator',	scalar_id('boolean'),	'{lang:Separator}',	'f');
 SELECT set_prop( 0,'prop:comment',	scalar_id('text'),	'{lang:Comment}',	'');
 SELECT set_prop( 0,'prop:readonly',	scalar_id('boolean'),	'{lang:Readonly}',	'f');
@@ -59,6 +68,7 @@ SELECT set_prop( 0,'prop:hidden',	scalar_id('boolean'),	'{lang:Hidden}',	'f');
 SELECT set_prop( 0,'prop:before_html',	scalar_id('text'),	'Additional html before input',	'');
 
 -- OBJECT_NAMEs
+SELECT set_prop( 0,'class:object_name',	scalar_id('label'),	'{lang:Object name}',	'');
 SELECT set_value(class_id('ref'),	'class:obj_name',	'ref_full_name(obj_id)');
 SELECT set_value(class_id('prop'),	'class:obj_name',	'class_full_name(class_id)||'':''||name');
 

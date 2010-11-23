@@ -30,24 +30,24 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 -- DIFF
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
-	SELECT CASE WHEN length($1)>0 THEN $1 ELSE $2 END;
+	SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text) RETURNS text AS $$
-	SELECT	CASE WHEN length($1)>0 THEN $1 ELSE
-		CASE WHEN length($2)>0 THEN $2 ELSE $3
+	SELECT	CASE WHEN $1!='' THEN $1 ELSE
+		CASE WHEN $2!='' THEN $2 ELSE $3
 	END END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text,a_4 text) RETURNS text AS $$
-	SELECT	CASE WHEN length($1)>0 THEN $1 ELSE
-		CASE WHEN length($2)>0 THEN $2 ELSE
-		CASE WHEN length($3)>0 THEN $3 ELSE $4
+	SELECT	CASE WHEN $1!='' THEN $1 ELSE
+		CASE WHEN $2!='' THEN $2 ELSE
+		CASE WHEN $3!='' THEN $3 ELSE $4
 	END END END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text,a_4 text,a_5 text) RETURNS text AS $$
-	SELECT	CASE WHEN length($1)>0 THEN $1 ELSE
-		CASE WHEN length($2)>0 THEN $2 ELSE
-		CASE WHEN length($3)>0 THEN $3 ELSE
-		CASE WHEN length($4)>0 THEN $4 ELSE $5
+	SELECT	CASE WHEN $1!='' THEN $1 ELSE
+		CASE WHEN $2!='' THEN $2 ELSE
+		CASE WHEN $3!='' THEN $3 ELSE
+		CASE WHEN $4!='' THEN $4 ELSE $5
 	END END END END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonzero (a_1 bigint,a_2 bigint) RETURNS bigint AS $$
@@ -103,6 +103,212 @@ $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 ----------------------------
 CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 'TRUE' ELSE 'FALSE' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO DATE/TIME
+----------------------------
+CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'DD.MM.YYYY HH24:MI:SS');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_datetime_iso (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'YYYY-MM-DD HH24:MI:SS');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_date_std (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'DD.MM.YYYY');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_date_iso (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'YYYY-MM-DD');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_date_my (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'MM YYYY');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_time (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'HH24:MI');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION seconds2time (integer) RETURNS text AS $$
+	SELECT to_char('1s'::interval*$1,CASE WHEN $1>3599 THEN 'HH24:' ELSE '' END||'MI:SS');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
+----------------------------
+CREATE OR REPLACE FUNCTION to_second () RETURNS timestamp AS $$
+	SELECT date_trunc('second',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_second (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('second',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_minute () RETURNS timestamp AS $$
+	SELECT date_trunc('minute',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_minute (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('minute',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_hour () RETURNS timestamp AS $$
+	SELECT date_trunc('hour',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_hour (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('hour',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_day () RETURNS timestamp AS $$
+	SELECT date_trunc('day',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_day (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('day',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION tomorrow () RETURNS timestamp AS $$
+	SELECT date_trunc('day',now()::timestamp+'1day'::interval);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION tomorrow (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('day',coalesce($1,now())::timestamp+'1day'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION yesterday () RETURNS timestamp AS $$
+	SELECT date_trunc('day',now()::timestamp-'1day'::interval);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION yesterday (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('day',coalesce($1,now())::timestamp-'1day'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_week () RETURNS timestamp AS $$
+	SELECT date_trunc('week',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_week (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('week',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp-'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_year () RETURNS timestamp AS $$
+	SELECT date_trunc('year',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION to_year (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('year',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION days_in_month (timestamp with time zone) RETURNS integer AS $$
+	SELECT date_part('day',to_month($1+'1month')-to_month($1))::integer;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION days2quantity (a_day timestamp with time zone,a_month timestamp with time zone) RETURNS double precision AS $$
+	SELECT CASE
+		WHEN $1 IS NULL THEN 1
+		WHEN to_month($1)>to_month($2) THEN 0
+		WHEN to_month($1)<to_month($2) THEN 1
+		ELSE 1-(date_part('day',$1)-1)/days_in_month($1)
+	END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp with time zone) RETURNS integer AS $$
+	SELECT round($1*days_in_month($2))::integer;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO KB/MB/GB 1000/1024
+----------------------------
+CREATE OR REPLACE FUNCTION to_kb1000 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1000.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_kb1000 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1000,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_kb1024 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1024.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_kb1024 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1024,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_mb1000 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1000000.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_mb1000 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1000000,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_mb1024 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1048576.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_mb1024 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1048576,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1000_ (numeric) RETURNS numeric AS $$
+	SELECT trunc($1/1000000000.0,3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1000_ (double precision) RETURNS numeric AS $$
+	SELECT trunc($1::numeric/1000000000,3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1000 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1000000000.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1000 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1000000000,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1024 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1073741824.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_gb1024 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1073741824,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_tb1000 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1000000000000.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_tb1000 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1000000000000,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_tb1024 (numeric) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1/1099511627776.0,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_tb1024 (double precision) RETURNS numeric AS $$
+	SELECT trunc(coalesce($1::numeric/1099511627776,0),3);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+
+----------------------------
+-- TO/FROM CENTS
+----------------------------
+CREATE OR REPLACE FUNCTION from_cents (a_cents double precision) RETURNS numeric AS $$
+	SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc(($1/100)::numeric,2) END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
+	SELECT trunc($1 * 100)::integer;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO SIGN
+----------------------------
+CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
+	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN 't' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_yes (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN 'yes' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_no (boolean) RETURNS text AS $$
+	SELECT CASE WHEN NOT $1 THEN 'no' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_yesno (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN '{lang:Yes}' ELSE '{lang:No}' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- COMPARE
+----------------------------
+CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double precision) RETURNS boolean AS $$
+	SELECT	CASE $1	WHEN 'lt' THEN $2 <  $3
+			WHEN 'le' THEN $2 <= $3
+			WHEN 'gt' THEN $2 >  $3
+			WHEN 'ge' THEN $2 >= $3
+			WHEN 'eq' THEN $2 =  $3
+			          ELSE $2 != $3
+		END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -329,6 +535,80 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id bigint) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
+DECLARE
+	the_id		bigint;
+	the_time	timestamp;
+BEGIN
+	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
+	IF the_id IS NULL THEN
+		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO the_id;
+	ELSIF the_time!=a_time THEN
+		UPDATE status SET time=a_time WHERE id=the_id;
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp with time zone) RETURNS bigint AS $$
+	SELECT set_status($1,$2,$3::timestamp);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text,a_time timestamp) RETURNS bigint AS $$
+	SELECT set_status($1,status_id($2),$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text,a_time timestamp with time zone) RETURNS bigint AS $$
+	SELECT set_status($1,status_id($2),$3::timestamp);
+$$ LANGUAGE sql VOLATILE STRICT;
+-- XXX important: this function does NOT change time of the status if it already exists
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text) RETURNS bigint AS $$
+DECLARE
+	a_type_id	bigint := status_id(a_type);
+	the_id		bigint;
+BEGIN
+	SELECT INTO the_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
+	IF the_id IS NULL THEN
+		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO the_id;
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION del_status (a_obj_id bigint,a_type text) RETURNS void AS $$
+	DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,a__id bigint,statuses text[]) RETURNS bigint AS $$
+DECLARE
+	row	record;
+	n_has	boolean;
+	adds	bigint[];
+	dels	bigint[];
+BEGIN
+	FOR row IN
+		SELECT		t.obj_id,t.name,s.id IS NOT NULL AS has
+		FROM		ref	t
+		LEFT JOIN	status	s ON s.type_id=t.obj_id AND s.object_id=a_obj_id
+		WHERE		t._id=a__id
+	LOOP
+		n_has := row.name = ANY(statuses);
+		IF row.has THEN
+			IF NOT n_has THEN
+				dels := dels || row.obj_id;
+			END IF;
+		ELSIF n_has THEN
+			adds := adds || row.obj_id;
+		END IF;
+	END LOOP;
+	IF adds>'{}'::bigint[] THEN
+		INSERT INTO status (object_id,type_id)
+		SELECT a_obj_id,obj_id FROM ref WHERE obj_id=ANY(adds);
+	END IF;
+	IF dels>'{}'::bigint[] THEN
+		DELETE FROM status WHERE object_id=a_obj_id AND type_id=ANY(dels);
+	END IF;
+	RETURN a_obj_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,parent text,statuses text[]) RETURNS bigint AS $$
+	SELECT set_statuses($1,status_id($2),$3);
+$$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- PROP
@@ -367,10 +647,10 @@ CREATE OR REPLACE FUNCTION replace_prop (
 	a_type_id	bigint,		-- $4
 	a_no		bigint,		-- $5
 	a_def		text,		-- $6
-	a_is_t		boolean,	-- $7
-	a_is_n		boolean,	-- $8
-	a_is_s		boolean,	-- $9
-	a_is_r		boolean,	-- $10
+	a_is_in_table	boolean,	-- $7
+	a_can_be_null	boolean,	-- $8
+	a_is_required	boolean,	-- $9
+	a_is_repeated	boolean,	-- $10
 	a_label		text		-- $11
 ) RETURNS bigint AS $$
 DECLARE
@@ -383,10 +663,10 @@ BEGIN
 	prep := prepare_replace(prep,'type_id',		a_type_id);
 	prep := prepare_replace(prep,'no',		a_no);
 	prep := prepare_replace(prep,'def',		a_def);
-	prep := prepare_replace(prep,'is_t',		a_is_t);
-	prep := prepare_replace(prep,'is_n',		a_is_n);
-	prep := prepare_replace(prep,'is_s',		a_is_s);
-	prep := prepare_replace(prep,'is_r',		a_is_r);
+	prep := prepare_replace(prep,'is_in_table',	a_is_in_table);
+	prep := prepare_replace(prep,'can_be_null',	a_can_be_null);
+	prep := prepare_replace(prep,'is_required',	a_is_required);
+	prep := prepare_replace(prep,'is_repeated',	a_is_repeated);
 	IF NOT EXISTS (SELECT 1 FROM prop WHERE obj_id=the_id) THEN
 		EXECUTE 'INSERT INTO prop ('||prep.keys||') VALUES ('||prep.vals||')';
 	ELSE
@@ -404,10 +684,10 @@ CREATE OR REPLACE FUNCTION set_prop (
 	a_type_id	bigint,		-- $3
 	a_label		text,		-- $4
 	a_def		text,		-- $5
-	a_is_t		boolean,	-- $6
-	a_is_n		boolean,	-- $7
-	a_is_s		boolean,	-- $8
-	a_is_r		boolean		-- $9
+	a_is_in_table	boolean,	-- $6
+	a_can_be_null	boolean,	-- $7
+	a_is_required	boolean,	-- $8
+	a_is_repeated	boolean		-- $9
 ) RETURNS bigint AS $$
 	SELECT replace_prop(prop_id($2),class_id(substr($2,0,strpos($2,':'))),substr($2,strpos($2,':')+1),$3,$1,$5,$6,$7,$8,$9,$4);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
@@ -479,6 +759,22 @@ CREATE OR REPLACE FUNCTION get_text_value (a_obj_id bigint,a_prop text,a_default
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_text_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS text AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3),'');
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+----------------------------
+-- GET BIGINT VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_prop_id bigint) RETURNS bigint AS $$
+	SELECT coalesce(get_value($1,$2)::bigint,0);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_prop text) RETURNS bigint AS $$
+	SELECT coalesce(get_value($1,$2)::bigint,0);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_class text,a_prop text) RETURNS bigint AS $$
+	SELECT coalesce(get_value($1,$2,$3)::bigint,0);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_bigint_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS bigint AS $$
+	SELECT coalesce(get_value_by_no($1,$2,$3)::bigint,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
@@ -672,12 +968,12 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 ----------------------------
 -- SET OLD VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop_id bigint,a_value text,a_subject_id bigint) RETURNS bigint AS $$
-	INSERT INTO old_value (obj_id,prop_id,value,old_time,subject_id) VALUES ($1,$2,$3,now(),$4);
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop_id bigint,a_value text,a_user_id bigint) RETURNS bigint AS $$
+	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,$2,$3,now(),$4);
 	SELECT $1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop text,a_value text,a_subject_id bigint) RETURNS bigint AS $$
-	INSERT INTO old_value (obj_id,prop_id,value,old_time,subject_id) VALUES ($1,prop_id($2),$3,now(),$4);
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop text,a_value text,a_user_id bigint) RETURNS bigint AS $$
+	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,prop_id($2),$3,now(),$4);
 	SELECT $1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
@@ -736,20 +1032,26 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS text AS $$
 	SELECT get_value(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS integer AS $$
-	SELECT get_integer_value(find_obj_in_hierarchy($1,$2,$3),$2);
-$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS text AS $$
 	SELECT get_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS integer AS $$
-	SELECT get_integer_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS SETOF text AS $$
 	SELECT get_values(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id bigint,a_prop text,a_path text) RETURNS SETOF text AS $$
 	SELECT get_values(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS integer AS $$
+	SELECT get_integer_value(find_obj_in_hierarchy($1,$2,$3),$2);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS integer AS $$
+	SELECT get_integer_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_bigint (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS bigint AS $$
+	SELECT get_bigint_value(find_obj_in_hierarchy($1,$2,$3),$2);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_bigint_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS bigint AS $$
+	SELECT get_bigint_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
@@ -794,210 +1096,92 @@ END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
 ----------------------------
--- TO DATE/TIME
+-- BLACKLIST
 ----------------------------
-CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'DD.MM.YYYY HH24:MI:SS');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_datetime_iso (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'YYYY-MM-DD HH24:MI:SS');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_date_std (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'DD.MM.YYYY');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_date_iso (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'YYYY-MM-DD');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_date_my (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'MM YYYY');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_time (timestamp) RETURNS text AS $$
-	SELECT to_char($1,'HH24:MI');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION seconds2time (integer) RETURNS text AS $$
-	SELECT to_char('1s'::interval*$1,CASE WHEN $1>3599 THEN 'HH24:' ELSE '' END||'MI:SS');
-$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION blacklist_id (a_class_id bigint,a_user_id bigint,a_name text) RETURNS bigint AS $$
+	SELECT obj_id FROM blacklist WHERE class_id=$1 AND user_id=$2 AND name=$3;
+$$ LANGUAGE sql STABLE STRICT;
+-- CREATE OR REPLACE FUNCTION in_blacklist (a_name text,a_class_id bigint,a_user_id bigint) RETURNS boolean AS $$
+-- 	SELECT EXISTS (
+-- 		SELECT 1 FROM blacklist WHERE $1 LIKE name AND class_id=$2 AND user_id IN (
+-- 			SELECT client_resellers($3,for_myself)
+-- 		)
+-- 	)
+-- $$ LANGUAGE sql STABLE STRICT;
+-- CREATE OR REPLACE FUNCTION blacklist_check (a_name text,a_class text,a_user_id bigint) RETURNS text AS $$
+--	SELECT CASE WHEN in_blacklist($1,class_id($2),$3) THEN $1 ELSE NULL END
+-- $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION replace_blacklist (
+	a_obj_id	bigint,
+	a_class_id	bigint,
+	a_user_id	bigint,
+	a_name		text,
+	a_label		text
+) RETURNS bigint AS $$
+DECLARE
+	the_id	bigint := coalesce(a_obj_id,nextval('id'));
+	keys	text	:= 'obj_id';
+	vals	text	:= the_id;
+	sets	text	:= '';
+BEGIN
+	IF a_class_id IS NOT NULL THEN
+		keys := keys || ',class_id';
+		vals := vals || ','||a_class_id;
+		sets := sets || ',class_id='||a_class_id;
+	END IF;
+	IF a_user_id IS NOT NULL THEN
+		keys := keys || ',user_id';
+		vals := vals || ','||a_user_id;
+		sets := sets || ',user_id='||a_user_id;
+	END IF;
+	IF a_name IS NOT NULL THEN
+		keys := keys || ',name';
+		vals := vals || ','||quote_literal(a_name);
+		sets := sets || ',name='||quote_literal(a_name);
+	END IF;
+	IF NOT EXISTS (SELECT 1 FROM blacklist WHERE obj_id=the_id) THEN
+		EXECUTE 'INSERT INTO blacklist ('||keys||') VALUES ('||vals||')';
+	ELSIF sets!='' THEN
+		EXECUTE 'UPDATE blacklist SET '||substr(sets,2)||' WHERE obj_id='||the_id;
+	END IF;
+	IF a_label IS NOT NULL THEN
+		PERFORM set_obj_label(the_id,a_label);
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_blacklist (a_class_id bigint,a_user_id bigint,a_name text,a_label text) RETURNS bigint AS $$
+	SELECT replace_blacklist(blacklist_id($1,$2,$3),$1,$2,$3,$4);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+-- CREATE OR REPLACE FUNCTION set_blacklist (a_class text,a_user text,a_name text,a_label text) RETURNS bigint AS $$
+-- 	SELECT set_blacklist(class_id($1),client_id($2),$3,$4);
+-- $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
--- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
+-- SESSION
 ----------------------------
-CREATE OR REPLACE FUNCTION to_second () RETURNS timestamp AS $$
-	SELECT date_trunc('second',now()::timestamp);
+CREATE OR REPLACE FUNCTION init_session (a_user_id bigint) RETURNS bigint AS $$
+BEGIN
+	EXECUTE 'CREATE TEMPORARY TABLE session (name text,value text);';
+	EXECUTE 'INSERT INTO session VALUES (''user_id'','''||a_user_id||''');';
+	RETURN a_user_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION get_session_value (a_name text) RETURNS text AS $$
+DECLARE
+	res text;
+BEGIN
+	IF EXISTS (SELECT 1 FROM pg_class WHERE relname='session') THEN
+		EXECUTE 'SELECT value FROM session WHERE name='''||a_name||'''' INTO res;
+	ELSE
+		RAISE NOTICE 'NO SESSION TABLE';
+	END IF;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_session_user_id () RETURNS bigint AS $$
+	SELECT str2num(get_session_value('user_id'))::bigint;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_second (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('second',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_minute () RETURNS timestamp AS $$
-	SELECT date_trunc('minute',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_minute (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('minute',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_hour () RETURNS timestamp AS $$
-	SELECT date_trunc('hour',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_hour (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('hour',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_day () RETURNS timestamp AS $$
-	SELECT date_trunc('day',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_day (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('day',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION tomorrow () RETURNS timestamp AS $$
-	SELECT date_trunc('day',now()::timestamp+'1day'::interval);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION tomorrow (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('day',coalesce($1,now())::timestamp+'1day'::interval);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION yesterday () RETURNS timestamp AS $$
-	SELECT date_trunc('day',now()::timestamp-'1day'::interval);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION yesterday (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('day',coalesce($1,now())::timestamp-'1day'::interval);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_week () RETURNS timestamp AS $$
-	SELECT date_trunc('week',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_week (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('week',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_month () RETURNS timestamp AS $$
-	SELECT date_trunc('month',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_month (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('month',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
-	SELECT date_trunc('month',now()::timestamp-'1month'::interval);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_year () RETURNS timestamp AS $$
-	SELECT date_trunc('year',now()::timestamp);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION to_year (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('year',coalesce($1,now())::timestamp);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION days_in_month (timestamp with time zone) RETURNS integer AS $$
-	SELECT date_part('day',to_month($1+'1month')-to_month($1))::integer;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION days2quantity (a_day timestamp with time zone,a_month timestamp with time zone) RETURNS double precision AS $$
-	SELECT CASE
-		WHEN $1 IS NULL THEN 1
-		WHEN to_month($1)>to_month($2) THEN 0
-		WHEN to_month($1)<to_month($2) THEN 1
-		ELSE 1-(date_part('day',$1)-1)/days_in_month($1)
-	END;
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp with time zone) RETURNS integer AS $$
-	SELECT round($1*days_in_month($2))::integer;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
-----------------------------
--- TO KB/MB/GB 1000/1024
-----------------------------
-CREATE OR REPLACE FUNCTION to_kb1000 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1000.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_kb1000 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1000,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_kb1024 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1024.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_kb1024 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1024,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_mb1000 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1000000.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_mb1000 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1000000,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_mb1024 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1048576.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_mb1024 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1048576,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1000_ (numeric) RETURNS numeric AS $$
-	SELECT trunc($1/1000000000.0,3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1000_ (double precision) RETURNS numeric AS $$
-	SELECT trunc($1::numeric/1000000000,3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1000 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1000000000.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1000 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1000000000,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1024 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1073741824.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_gb1024 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1073741824,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_tb1000 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1000000000000.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_tb1000 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1000000000000,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_tb1024 (numeric) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1/1099511627776.0,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION to_tb1024 (double precision) RETURNS numeric AS $$
-	SELECT trunc(coalesce($1::numeric/1099511627776,0),3);
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-
-----------------------------
--- TO/FROM CENTS
-----------------------------
-CREATE OR REPLACE FUNCTION from_cents (a_cents double precision) RETURNS numeric AS $$
-	SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc(($1/100)::numeric,2) END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
-	SELECT trunc($1 * 100)::integer;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
-----------------------------
--- TO SIGN
-----------------------------
-CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
-	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN 't' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_yes (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN 'yes' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_no (boolean) RETURNS text AS $$
-	SELECT CASE WHEN NOT $1 THEN 'no' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_yesno (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN '{lang:Yes}' ELSE '{lang:No}' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
-----------------------------
--- COMPARE
-----------------------------
-CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double precision) RETURNS boolean AS $$
-	SELECT	CASE $1	WHEN 'lt' THEN $2 <  $3
-			WHEN 'le' THEN $2 <= $3
-			WHEN 'gt' THEN $2 >  $3
-			WHEN 'ge' THEN $2 >= $3
-			WHEN 'eq' THEN $2 =  $3
-			          ELSE $2 != $3
-		END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- LOG

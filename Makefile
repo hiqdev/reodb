@@ -20,3 +20,5 @@ clean:
 
 do_all: clean recreate _all
 
+ALL:
+	$(MAKE) do_all > not 2>err

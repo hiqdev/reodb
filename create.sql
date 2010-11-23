@@ -27,10 +27,14 @@ CREATE TABLE prop (
 	type_id		bigint		NOT NULL,
 	no		integer		NOT NULL DEFAULT 0,
 	def		text		NULL,
-	is_t		boolean		NOT NULL DEFAULT FALSE,
-	is_n		boolean		NOT NULL DEFAULT FALSE,
-	is_s		boolean		NOT NULL DEFAULT FALSE,
-	is_r		boolean		NOT NULL DEFAULT FALSE
+	is_in_table	boolean		NOT NULL DEFAULT FALSE,
+	can_be_null	boolean		NOT NULL DEFAULT FALSE,
+	is_required	boolean		NOT NULL DEFAULT FALSE,
+	is_repeated	boolean		NOT NULL DEFAULT FALSE,
+	save_history	boolean		NOT NULL DEFAULT FALSE,
+	insert_trigger	text		NULL,
+	update_trigger	text		NULL,
+	delete_trigger	text		NULL
 );
 SELECT * INTO del_prop FROM prop LIMIT 0;
 
@@ -49,13 +53,13 @@ CREATE TABLE old_value (
 	no		integer		NULL,
 	value		text		NULL,
 	old_time	timestamp	NULL,
-	subject_id	bigint		NULL
+	user_id		bigint		NULL
 );
 
 CREATE TABLE user_value (
 	id		bigint		NOT NULL DEFAULT nextval('id'),
 	obj_id		bigint		NOT NULL,
-	subject_id	bigint		NOT NULL,
+	user_id		bigint		NOT NULL,
 	prop_id		bigint		NOT NULL,
 	no		integer		NOT NULL DEFAULT 0,
 	value		text		NOT NULL DEFAULT ''
@@ -88,6 +92,7 @@ SELECT now()::timestamp without time zone AS old_time,* INTO old_link FROM link 
 CREATE TABLE status (
 	id		bigint		NOT NULL DEFAULT nextval('id'),
 	object_id	bigint		NOT NULL,
+	user_id		bigint		NULL,
 	type_id		bigint		NOT NULL,
 	time		timestamp	NOT NULL DEFAULT now()
 );
@@ -96,7 +101,7 @@ SELECT now()::timestamp without time zone AS old_time,* INTO old_status FROM sta
 CREATE TABLE blacklist (
 	obj_id		bigint		NOT NULL,
 	class_id	bigint		NOT NULL,
-	subject_id	bigint		NOT NULL,
+	user_id		bigint		NOT NULL,
 	name		text		NOT NULL,
 	for_myself	boolean		NOT NULL DEFAULT TRUE
 );

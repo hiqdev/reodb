@@ -45,10 +45,10 @@ CREATE INDEX			value_obj_id_idx				ON value (obj_id);
 CREATE INDEX			value_prop_id_idx				ON value (prop_id);
 
 -- USER VALUE
-ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_no_obj_id_subject_id_prop_id_uniq UNIQUE (no,obj_id,subject_id,prop_id);
+ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_no_obj_id_user_id_prop_id_uniq UNIQUE (no,obj_id,user_id,prop_id);
 ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_obj_id_fkey		FOREIGN KEY (obj_id)	REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_subject_id_fkey	FOREIGN KEY (subject_id) REFERENCES obj (obj_id)
+ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_user_id_fkey		FOREIGN KEY (user_id)	REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_prop_id_fkey		FOREIGN KEY (prop_id)	REFERENCES prop (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
@@ -88,15 +88,29 @@ ALTER TABLE ONLY link		ADD CONSTRAINT link_tag_id_fkey			FOREIGN KEY (tag_id)	RE
 CREATE INDEX			link_src_id_idx					ON link (src_id);
 CREATE INDEX			link_dst_id_idx					ON link (dst_id);
 
+-- STATUS
+ALTER TABLE ONLY status		ADD CONSTRAINT status_id_pkey			PRIMARY KEY (id);
+ALTER TABLE ONLY status		ADD CONSTRAINT status_type_id_object_id_uniq	UNIQUE (time,type_id,object_id);
+ALTER TABLE ONLY status		ADD CONSTRAINT status_object_id_fkey		FOREIGN KEY (object_id)	REFERENCES obj (obj_id)
+										ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY status		ADD CONSTRAINT status_user_id			FOREIGN KEY (user_id) REFERENCES obj (obj_id)
+										ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY status		ADD CONSTRAINT status_type_id_fkey		FOREIGN KEY (type_id)	REFERENCES ref (obj_id)
+										ON UPDATE CASCADE ON DELETE RESTRICT;
+CREATE INDEX			status_object_id_idx				ON status (object_id);
+CREATE INDEX			status_user_id					ON status (user_id);
+CREATE INDEX			status_type_id_idx				ON status (type_id);
+CREATE INDEX			status_time_idx					ON status (time);
+
 -- BLACKLIST
 ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_subject_id_fkey	FOREIGN KEY (subject_id) REFERENCES obj (obj_id)
+ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_user_id		FOREIGN KEY (user_id) REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
 CREATE INDEX			blacklist_class_id_idx				ON blacklist (class_id);
-CREATE INDEX			blacklist_subject_id_idx			ON blacklist (subject_id);
+CREATE INDEX			blacklist_user_id				ON blacklist (user_id);
 
 -- WRONG LOGIN
 -- LOG

@@ -27,7 +27,8 @@ CREATE OR REPLACE VIEW state_h AS
 
 CREATE OR REPLACE VIEW prop_h AS
 	SELECT		obj_id,no,class_full_name(p.class_id) AS class,name,ref_full_name(type_id) AS type,
-			to_sign(is_t)||to_sign(is_n)||to_sign(is_s)||to_sign(is_r) AS TNSR,label,''''||def||'''' AS def
+			to_sign(is_in_table)||to_sign(can_be_null)||to_sign(is_required)||to_sign(is_repeated) AS TNSR,
+			label,''''||def||'''' AS def
 	FROM		prop	p
 	LEFT JOIN	obj	o USING (obj_id)
 	ORDER BY	class,no
@@ -46,7 +47,7 @@ CREATE OR REPLACE VIEW value_h AS
 
 -- BLACKLIST
 CREATE OR REPLACE VIEW blacklist_h AS
-	SELECT		b.obj_id,t.name AS class,obj_full_name(b.subject_id) AS user,b.name,to_sign(b.for_myself) AS for_myself,o.label
+	SELECT		b.obj_id,t.name AS class,obj_full_name(b.user_id) AS user,b.name,to_sign(b.for_myself) AS for_myself,o.label
 	FROM		blacklist	b
 	JOIN		obj		o ON o.obj_id=b.obj_id
 	LEFT JOIN	ref		t ON t.obj_id=b.class_id
