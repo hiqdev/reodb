@@ -1,15 +1,14 @@
 
 CREATE OR REPLACE VIEW obj_h AS
-	SELECT		o.obj_id,r.name AS class,obj_name(o.obj_id) AS name,label,descr,
+	SELECT		o.obj_id,r.name AS class,obj_name(o.obj_id) AS name,o.label,o.descr,
 			create_time,update_time
 	FROM		obj	o
 	LEFT JOIN	ref	r ON r.obj_id=o.class_id
 ;
 
 CREATE OR REPLACE VIEW ref_h AS
-	SELECT		obj_id,_id,no,ref_full_name(obj_id) AS name,o.label
+	SELECT		obj_id,_id,no,ref_full_name(obj_id) AS name,r.label
 	FROM		ref	r
-	LEFT JOIN	obj	o  USING (obj_id)
 	ORDER BY	name
 ;
 
