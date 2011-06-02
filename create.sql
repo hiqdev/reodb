@@ -16,7 +16,7 @@ CREATE TABLE ref (
 	obj_id		bigint		NOT NULL,
 	_id		bigint		NOT NULL,
 	name		text		NOT NULL DEFAULT '',
-	no		integer		NOT NULL DEFAULT 0,
+	no		integer		NULL,
 	label		text		NULL,
 	descr		text		NULL
 );
