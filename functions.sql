@@ -68,10 +68,10 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_html (text) RETURNS text AS $$
         SELECT replace(replace(replace($1,'>','&gt;'),'<','&lt;'),E'\n','<br>');
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION genpass (length integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION passgen (length integer) RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,$1);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION genpass () RETURNS text AS $$
+CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
@@ -94,6 +94,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 
+-- PASSWORD
+CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
+	AS '$libdir/pgcrypto', 'pg_crypt'
+LANGUAGE C IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
+	AS '$libdir/pgcrypto', 'pg_gen_salt'
+LANGUAGE C VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
+	SELECT $1~E'^\\$\\d\\$';
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION check_password (a_test text,a_pwd text) RETURNS boolean AS $$
+	SELECT CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
+	SELECT CASE WHEN is_crypted($1) THEN $1 ELSE crypt($1,gen_salt('md5')) END;
+$$ LANGUAGE sql VOLATILE STRICT;
+
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --	'/www/rcp3/src/sql/last_strpos','last_strpos'
 --LANGUAGE c IMMUTABLE STRICT;
@@ -113,6 +130,12 @@ CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_datetime_iso (timestamp) RETURNS text AS $$
 	SELECT to_char($1,'YYYY-MM-DD HH24:MI:SS');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_datetime_usa (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'FMMM/FMDD/YYYY FMHH:MIAM');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_date_usa (timestamp) RETURNS text AS $$
+	SELECT to_char($1,'FMMM/FMDD/YYYY');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_date_std (timestamp) RETURNS text AS $$
 	SELECT to_char($1,'DD.MM.YYYY');
@@ -351,10 +374,10 @@ CREATE OR REPLACE FUNCTION obj_descr (a_obj_id bigint) RETURNS text AS $$
 	SELECT descr FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id bigint,a_label text) RETURNS void AS $$
-	UPDATE obj SET label=coalesce($2,'') WHERE obj_id=$1;
+	UPDATE obj SET label=$2 WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id bigint,a_label text,a_descr text) RETURNS void AS $$
-	UPDATE obj SET label=coalesce($2,''),descr=coalesce($3,'') WHERE obj_id=$1;
+	UPDATE obj SET label=$2,descr=$3 WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_obj_descr (a_obj_id bigint,a_descr text) RETURNS void AS $$
 	UPDATE obj SET descr=coalesce($2,'') WHERE obj_id=$1;
@@ -438,25 +461,22 @@ BEGIN
 	IF the_id IS NULL THEN
 		the_id	:= nextval('id');
 		pos	:= last_strpos(a_ref,',');
-		INSERT INTO ref (obj_id,_id,name,no) VALUES (the_id,ref_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no);
+		INSERT INTO ref (obj_id,_id,name,no,label,descr)
+		VALUES (the_id,ref_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no,a_label,a_descr);
 	ELSE
-		UPDATE ref SET no=a_no WHERE obj_id=the_id;
+		UPDATE ref SET no=a_no,label=a_label,descr=a_descr
+		WHERE obj_id=the_id;
 	END IF;
-	IF a_label IS NOT NULL THEN
-		PERFORM set_obj_label(the_id,a_label);
-	END IF;
-	IF a_descr IS NOT NULL THEN
-		PERFORM set_obj_descr(the_id,a_descr);
-	END IF;
+	PERFORM set_obj_label(the_id,a_label,a_descr);
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_ref (a_no bigint,a_ref text,a_label text) RETURNS bigint AS $$
 	SELECT set_ref($1,$2,$3,NULL);
-$$ LANGUAGE sql VOLATILE STRICT;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS bigint AS $$
 	SELECT set_ref(0,$1,$2,NULL);
-$$ LANGUAGE sql VOLATILE STRICT;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- CLASS
@@ -1060,8 +1080,11 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS bigint AS $$
 	SELECT ref_id($1,top_ref_id('tag'));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_tag (a_obj_id bigint,a_tag_id bigint) RETURNS void AS $$
-	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2);
+CREATE OR REPLACE FUNCTION set_tag (a_obj_id bigint,a_tag_id bigint) RETURNS bigint AS $$
+	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2) RETURNING id;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_tag (a_obj_id bigint,a_tag text) RETURNS bigint AS $$
+	INSERT INTO tag (obj_id,tag_id) VALUES ($1,tag_id($2)) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
