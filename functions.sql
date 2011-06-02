@@ -475,7 +475,7 @@ CREATE OR REPLACE FUNCTION set_ref (a_no bigint,a_ref text,a_label text) RETURNS
 	SELECT set_ref($1,$2,$3,NULL);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS bigint AS $$
-	SELECT set_ref(0,$1,$2,NULL);
+	SELECT set_ref(NULL,$1,$2,NULL);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
