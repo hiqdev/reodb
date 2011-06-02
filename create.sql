@@ -5,10 +5,10 @@ CREATE SEQUENCE "id" START 1000000;
 CREATE TABLE obj (
 	obj_id		bigint		NOT NULL DEFAULT nextval('id'),
 	class_id	bigint		NOT NULL,
-	label		text		NOT NULL DEFAULT '',
-	descr		text		NOT NULL DEFAULT '',
+	label		text		NULL,
+	descr		text		NULL,
 	create_time	timestamp	NOT NULL DEFAULT now(),
-	update_time	timestamp	NOT NULL DEFAULT now()
+	update_time	timestamp	NULL
 );
 SELECT now()::timestamp without time zone AS old_time,* INTO old_obj FROM obj limit 0;
 
@@ -16,7 +16,9 @@ CREATE TABLE ref (
 	obj_id		bigint		NOT NULL,
 	_id		bigint		NOT NULL,
 	name		text		NOT NULL DEFAULT '',
-	no		integer		NOT NULL DEFAULT 0
+	no		integer		NOT NULL DEFAULT 0,
+	label		text		NULL,
+	descr		text		NULL
 );
 SELECT * INTO del_ref FROM ref LIMIT 0;
 
@@ -31,10 +33,7 @@ CREATE TABLE prop (
 	can_be_null	boolean		NOT NULL DEFAULT FALSE,
 	is_required	boolean		NOT NULL DEFAULT FALSE,
 	is_repeated	boolean		NOT NULL DEFAULT FALSE,
-	save_history	boolean		NOT NULL DEFAULT FALSE,
-	insert_trigger	text		NULL,
-	update_trigger	text		NULL,
-	delete_trigger	text		NULL
+	save_history	boolean		NOT NULL DEFAULT FALSE
 );
 SELECT * INTO del_prop FROM prop LIMIT 0;
 
