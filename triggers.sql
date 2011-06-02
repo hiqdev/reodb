@@ -89,24 +89,21 @@ BEGIN
 	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE FUNCTION value_change_trigger () RETURNS "trigger" AS $$
+CREATE OR REPLACE FUNCTION value_after_change_trigger () RETURNS "trigger" AS $$
 DECLARE
-	func text := get_value(NEW.prop_id,'prop:trigger');
+	func text;
+	row record;
 BEGIN
-	IF func IS NOT NULL THEN
-		EXECUTE 'SELECT '||func||'('||NEW.obj_id||')';
+	IF (TG_OP='DELETE') THEN
+		row := OLD;
+	ELSE
+		row := NEW;
 	END IF;
-	RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-CREATE OR REPLACE FUNCTION value_delete_trigger () RETURNS "trigger" AS $$
-DECLARE
-	func text := get_value(OLD.prop_id,'prop:trigger');
-BEGIN
+	func := get_value(row.prop_id,'prop:'||lower(TG_OP)||'_trigger');
 	IF func IS NOT NULL THEN
-		EXECUTE 'SELECT '||func||'('||OLD.obj_id||')';
+		EXECUTE 'SELECT '||func||'('||row.obj_id||')';
 	END IF;
-	RETURN OLD;
+	RETURN row;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -160,8 +157,7 @@ CREATE TRIGGER odb_after_delete_trigger		AFTER	DELETE	ON prop		FOR EACH ROW EXEC
 
 -- VALUE
 CREATE TRIGGER value_before_insert_trigger	BEFORE	INSERT	ON value	FOR EACH ROW EXECUTE PROCEDURE value_before_insert_trigger();
-CREATE TRIGGER value_change_trigger	AFTER INSERT OR UPDATE	ON value	FOR EACH ROW EXECUTE PROCEDURE value_change_trigger();
-CREATE TRIGGER value_delete_trigger		AFTER	DELETE	ON value	FOR EACH ROW EXECUTE PROCEDURE value_delete_trigger();
+CREATE TRIGGER value_after_change_trigger AFTER INSERT OR UPDATE OR DELETE ON value FOR EACH ROW EXECUTE PROCEDURE value_after_change_trigger();
 
 -- TAG
 CREATE TRIGGER tag_before_insert_trigger	BEFORE	INSERT	ON tag		FOR EACH ROW EXECUTE PROCEDURE tag_before_insert_trigger();
