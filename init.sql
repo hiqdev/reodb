@@ -55,9 +55,9 @@ SELECT set_prop(12,'prop:can_be_null',	scalar_id('boolean'),	'{lang:Can be null}
 SELECT set_prop(13,'prop:is_required',	scalar_id('boolean'),	'{lang:Is required}',	'f',	TRUE,NULL,NULL,NULL);
 SELECT set_prop(14,'prop:is_repeated',	scalar_id('boolean'),	'{lang:Is repeated}',	'f',	TRUE,NULL,NULL,NULL);
 SELECT set_prop(21,'prop:save_history',	scalar_id('boolean'),	'{lang:Save history}',	'f',	TRUE,NULL,NULL,NULL);
-SELECT set_prop(22,'prop:insert_trigger',scalar_id('name'),	'{lang:Insert trigger}','',	TRUE,TRUE,NULL,NULL);
-SELECT set_prop(23,'prop:update_trigger',scalar_id('name'),	'{lang:Update trigger}','',	TRUE,TRUE,NULL,NULL);
-SELECT set_prop(24,'prop:delete_trigger',scalar_id('name'),	'{lang:Delete trigger}','',	TRUE,TRUE,NULL,NULL);
+SELECT set_prop( 0,'prop:insert_trigger',scalar_id('name'),	'{lang:Insert trigger}','');
+SELECT set_prop( 0,'prop:update_trigger',scalar_id('name'),	'{lang:Update trigger}','');
+SELECT set_prop( 0,'prop:delete_trigger',scalar_id('name'),	'{lang:Delete trigger}','');
 SELECT set_prop( 0,'prop:separator',	scalar_id('boolean'),	'{lang:Separator}',	'f');
 SELECT set_prop( 0,'prop:comment',	scalar_id('text'),	'{lang:Comment}',	'');
 SELECT set_prop( 0,'prop:readonly',	scalar_id('boolean'),	'{lang:Readonly}',	'f');
