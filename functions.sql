@@ -1074,6 +1074,22 @@ CREATE OR REPLACE FUNCTION get_bigint_hierarchy_value (a_obj_id bigint,a_prop te
 	SELECT get_bigint_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
 
+--- VALUES DEBUG
+CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
+	SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN obj_full_name($1::integer) ELSE $1 END
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id bigint) RETURNS text AS $$
+	SELECT	cjoin(val)
+	FROM	(
+		SELECT		c.name||':'||p.name||'="'||v.value||'"' AS val
+		FROM		value		v
+		JOIN		prop		p ON p.obj_id=v.prop_id
+		JOIN		ref		c ON c.obj_id=p.class_id
+		WHERE		v.obj_id=$1
+		ORDER BY	c.name,p.name,v.no
+	)	AS a
+$$ LANGUAGE sql STABLE STRICT;
+
 ----------------------------
 -- TAG
 ----------------------------

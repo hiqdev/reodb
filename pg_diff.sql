@@ -1,23 +1,3 @@
-\timing
-\a
-
---- ALL_VALUES FUNCTION
-CREATE OR REPLACE FUNCTION value_of_the_value (a_value text) RETURNS text AS $$
-	SELECT CASE WHEN $1~'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN object_full_name($1::integer) ELSE $1 END
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION all_values (a_obj_id integer) RETURNS text AS $$
-	DECLARE
-		val RECORD;
-		res text;
-	BEGIN
-		res := '';
-		FOR val IN SELECT prop_full_name(prop_id) AS prop,no,value FROM value WHERE obj_id=a_obj_id ORDER BY prop,no LOOP
-			res = res||val.prop||'['||val.no||']'||'='||value_of_the_value(val.value)||'\n';
-		END LOOP;
-		RETURN res;
-	END;
-$$ LANGUAGE plpgsql STABLE STRICT;
-
 --- TABLES
 SELECT 'TABLE' AS object, relname FROM pg_class WHERE relname NOT LIKE 'pg_%' AND relkind='r' ORDER BY relname;
 
@@ -120,27 +100,15 @@ ORDER BY	c.relname,a.attname;
 
 --- TYPES
 SELECT		'RECORD:type' AS obj,
-		no,type_full_name(obj_id) AS full_name,label,md5(all_values(t.obj_id)) AS values
-FROM		type	t
+		no,ref_full_name(obj_id) AS full_name,t.label,md5(dump_all_values(t.obj_id)) AS values
+FROM		ref	t
 LEFT JOIN	obj	o USING (obj_id)
 ORDER BY	full_name;
 
 --- PROPS
 SELECT		'RECORD:prop' AS obj,
-		no,class_full_name(p.class_id) AS class,name AS prop,type_full_name(type_id) AS type,
-		to_sign(is_t)||to_sign(is_n)||to_sign(is_s)||to_sign(is_r) AS TNSR,label,value_of_the_value(def) AS def
+		no,class_full_name(p.class_id) AS class,name AS prop,ref_full_name(type_id) AS type,
+		to_sign(is_in_table)||to_sign(can_be_null)||to_sign(is_required)||to_sign(is_repeated) AS TNRR,label,dump_value(def) AS def
 FROM		prop	p
 LEFT JOIN	obj	o USING (obj_id)
 ORDER BY	class,no,prop;
-
---- SOFTS
-SELECT		'RECORD:soft' AS obj,
-		s.name,s.vno AS vno,t.name AS type,md5(all_values(s.obj_id)) AS values
-FROM		soft	s
-LEFT JOIN	type	t ON (t.obj_id=s.type_id)
-LEFT JOIN	type	a ON (a.obj_id=s.state_id)
-WHERE		(s.name,s.vno) IN (SELECT name,max(vno) FROM soft GROUP BY name)
-ORDER BY	name;
-
-\a
-\timing
