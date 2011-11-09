@@ -94,6 +94,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 
+-- SPLIT
+CREATE OR REPLACE FUNCTION split (a text,sym text) RETURNS text[] AS $$
+DECLARE
+	str text := a;
+	npt text;
+	res text[];
+	fin boolean := false;
+	pos integer;
+BEGIN
+	LOOP
+		pos := strpos(str,sym);
+		IF pos=0 THEN
+			pos := length(str)+1;
+			fin := true;
+		END IF;
+		IF pos>1 THEN
+			npt := btrim(substr(str,0,pos),E'       \n');
+			IF npt!='' THEN
+				res := array_append(res,npt);
+			END IF;
+		END IF;
+		EXIT WHEN fin;
+		str := substr(str,pos+1);
+	END LOOP;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION csplit (a text) RETURNS text[] AS $$
+	SELECT split($1,',');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+-- UNNEST
+CREATE OR REPLACE FUNCTION unnest (a text[]) RETURNS SETOF text AS $$
+DECLARE
+	r text;
+BEGIN
+	FOR i IN 1..coalesce(array_upper(a,1),0) LOOP
+		r := a[i];
+		RETURN NEXT r;
+	END LOOP;
+	RETURN;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
 -- PASSWORD
 CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
 	AS '$libdir/pgcrypto', 'pg_crypt'
@@ -555,20 +599,23 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id bigint) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_subject_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
 DECLARE
 	the_id		bigint;
 	the_time	timestamp;
 BEGIN
 	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
 	IF the_id IS NULL THEN
-		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO the_id;
+		INSERT INTO status (object_id,subject_id,type_id) VALUES (a_obj_id,a_subject_id,a_type_id) RETURNING id INTO the_id;
 	ELSIF the_time!=a_time THEN
-		UPDATE status SET time=a_time WHERE id=the_id;
+		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=a_time WHERE id=the_id;
 	END IF;
 	RETURN the_id;
 END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
+	SELECT set_status($1,NULL,$2,$3);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp with time zone) RETURNS bigint AS $$
 	SELECT set_status($1,$2,$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -591,6 +638,9 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION reset_status (a_obj_id bigint,a_type text) RETURNS bigint AS $$
+	SELECT set_status($1,status_id($2),now());
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION del_status (a_obj_id bigint,a_type text) RETURNS void AS $$
 	DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -626,8 +676,8 @@ BEGIN
 	RETURN a_obj_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,parent text,statuses text[]) RETURNS bigint AS $$
-	SELECT set_statuses($1,status_id($2),$3);
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,parent text,statuses text) RETURNS bigint AS $$
+	SELECT set_statuses($1,status_id($2),csplit($3));
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------

@@ -44,6 +44,22 @@ CREATE OR REPLACE VIEW value_h AS
 	ORDER BY	class,name,prop,no
 ;
 
+-- STATUS
+CREATE OR REPLACE VIEW statusz AS
+	SELECT		s.*,t.name
+	FROM		status		s
+	JOIN		ref		t ON t.obj_id=s.type_id
+;
+CREATE OR REPLACE VIEW status_h AS
+	SELECT		s.*,coalesce(o.name||',','')||coalesce(p.name||',','')||coalesce(q.name||',','')||r.name||','||t.name AS type
+	FROM		status		s
+	JOIN		ref		t ON t.obj_id=s.type_id
+	LEFT JOIN	ref		r ON r.obj_id=t._id
+	LEFT JOIN	ref		q ON q.obj_id=r._id AND q.obj_id!=0
+	LEFT JOIN	ref		p ON p.obj_id=q._id AND p.obj_id!=0
+	LEFT JOIN	ref		o ON o.obj_id=p._id AND o.obj_id!=0
+;
+
 -- BLACKLIST
 CREATE OR REPLACE VIEW blacklist_h AS
 	SELECT		b.obj_id,t.name AS class,obj_full_name(b.user_id) AS user,b.name,to_sign(b.for_myself) AS for_myself,o.label

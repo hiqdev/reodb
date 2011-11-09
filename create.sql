@@ -91,7 +91,7 @@ SELECT now()::timestamp without time zone AS old_time,* INTO old_link FROM link 
 CREATE TABLE status (
 	id		bigint		NOT NULL DEFAULT nextval('id'),
 	object_id	bigint		NOT NULL,
-	user_id		bigint		NULL,
+	subject_id	bigint		NULL,
 	type_id		bigint		NOT NULL,
 	time		timestamp	NOT NULL DEFAULT now()
 );
