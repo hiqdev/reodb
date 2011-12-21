@@ -3,14 +3,14 @@
 -- ODB TRIGGER FUNCTIONS
 CREATE OR REPLACE FUNCTION odb_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
-	NEW.obj_id := coalesce(NEW.obj_id,nextval('id'));
+	NEW.obj_id := coalesce(NEW.obj_id,nextval('obj_id_seq'));
 	INSERT INTO obj (obj_id,class_id) VALUES (NEW.obj_id,class_id(TG_RELNAME));
 	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION odb_safe_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
-	NEW.obj_id := coalesce(NEW.obj_id,nextval('id'));
+	NEW.obj_id := coalesce(NEW.obj_id,nextval('obj_id_seq'));
 	IF NOT EXISTS (SELECT 1 FROM obj WHERE obj_id=NEW.obj_id) THEN
 		INSERT INTO obj (obj_id,class_id) VALUES (NEW.obj_id,class_id(TG_RELNAME));
 	END IF;
@@ -133,7 +133,7 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM link WHERE src_id=NEW.src_id AND dst_id=NEW.dst_id AND tag_id=NEW.tag_id) THEN
 		RETURN NULL;
 	END IF;
-	NEW.obj_id := coalesce(NEW.obj_id,nextval('id'));
+	NEW.obj_id := coalesce(NEW.obj_id,nextval('obj_id_seq'));
 	INSERT INTO obj (obj_id,class_id) VALUES (NEW.obj_id,3);
 	RETURN NEW;
 END;

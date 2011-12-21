@@ -2,29 +2,29 @@
 
 -- REPLACE
 CREATE TYPE replace_data AS (keys text,vals text,sets text);
-CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value bigint) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||$3 END,
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||$3 END,
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||$3::text END,
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value text) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||quote_literal($3) END,
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value timestamp) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE $1.keys||','||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE $1.vals||','||quote_literal($3::text) END,
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
@@ -50,7 +50,7 @@ CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text,a_4 text,a_5 tex
 		CASE WHEN $4!='' THEN $4 ELSE $5
 	END END END END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION nonzero (a_1 bigint,a_2 bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION nonzero (a_1 integer,a_2 integer) RETURNS integer AS $$
 	SELECT CASE WHEN $1>0 THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonzero (a_1 integer,a_2 integer) RETURNS integer AS $$
@@ -381,15 +381,15 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 -- GET OBJECT CLASS/STATE
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_class_id (a_obj_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION obj_class_id (a_obj_id integer) RETURNS integer AS $$
 	SELECT class_id FROM obj WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_class (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_class (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_state_id (a_obj_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION obj_state_id (a_obj_id integer) RETURNS integer AS $$
 DECLARE
-	res bigint;
+	res integer;
 BEGIN
 	EXECUTE 'SELECT state_id FROM '|| (
 		SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
@@ -397,7 +397,7 @@ BEGIN
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_state (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_state (a_obj_id integer) RETURNS text AS $$
 DECLARE
 	res text;
 BEGIN
@@ -411,48 +411,48 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_label (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_label (a_obj_id integer) RETURNS text AS $$
 	SELECT label FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_descr (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_descr (a_obj_id integer) RETURNS text AS $$
 	SELECT descr FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id bigint,a_label text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text) RETURNS void AS $$
 	UPDATE obj SET label=$2 WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id bigint,a_label text,a_descr text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text,a_descr text) RETURNS void AS $$
 	UPDATE obj SET label=$2,descr=$3 WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_obj_descr (a_obj_id bigint,a_descr text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_descr (a_obj_id integer,a_descr text) RETURNS void AS $$
 	UPDATE obj SET descr=coalesce($2,'') WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- GET/SET OBJECT CREATE/UPDATE TIME
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_create_time (a_obj_id bigint) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
 	SELECT create_time FROM obj WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_update_time (a_obj_id bigint) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION obj_update_time (a_obj_id integer) RETURNS timestamp AS $$
 	SELECT update_time FROM obj WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_obj_create_time (a_obj_id bigint,a_create_time timestamp) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_create_time (a_obj_id integer,a_create_time timestamp) RETURNS void AS $$
 	UPDATE obj SET create_time=$2 WHERE obj_id = $1;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id bigint,a_update_time timestamp) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer,a_update_time timestamp) RETURNS void AS $$
 	UPDATE obj SET update_time=$2 WHERE obj_id = $1;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id bigint) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer) RETURNS void AS $$
 	UPDATE obj SET update_time='now' WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- REF
 ----------------------------
-CREATE OR REPLACE FUNCTION top_ref_id (a_ref text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION top_ref_id (a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$1 AND _id=0;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (a_ref text,a_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION ref_id (a_ref text,a_id integer) RETURNS integer AS $$
 DECLARE
 	pos integer := strpos(a_ref,',');
 BEGIN
@@ -462,51 +462,51 @@ BEGIN
 	END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION ref_id (text) RETURNS integer AS $$
 	SELECT ref_id($1,0);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (bigint,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION ref_id (integer,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=$1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (text,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION ref_id (text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id($1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (text,text,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION ref_id (text,text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id($1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent_id bigint,a_1 text,a_2 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=$1 AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT CASE WHEN _id=0 THEN name ELSE ref_full_name(_id)||','||name END
 	FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_full_name (a_parent_id bigint,a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION ref_full_name (a_parent_id integer,a_obj_id integer) RETURNS text AS $$
 	SELECT CASE WHEN _id=0 OR _id=$2 THEN name ELSE ref_full_name(_id)||','||name END
 	FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_ref (a_no bigint,a_ref text,a_label text,a_descr text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text,a_descr text) RETURNS integer AS $$
 DECLARE
-	the_id	bigint := ref_id(a_ref);
+	the_id	integer := ref_id(a_ref);
 	pos	integer;
 BEGIN
 	IF the_id IS NULL THEN
-		the_id	:= nextval('id');
 		pos	:= last_strpos(a_ref,',');
 		INSERT INTO ref (obj_id,_id,name,no,label,descr)
-		VALUES (the_id,ref_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no,a_label,a_descr);
+		VALUES (the_id,ref_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no,a_label,a_descr)
+		RETURNING obj_id INTO the_id;
 	ELSE
 		UPDATE ref SET no=a_no,label=a_label,descr=a_descr
 		WHERE obj_id=the_id;
@@ -515,10 +515,10 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_ref (a_no bigint,a_ref text,a_label text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text) RETURNS integer AS $$
 	SELECT set_ref($1,$2,$3,NULL);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS integer AS $$
 	SELECT set_ref(NULL,$1,$2,NULL);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
@@ -526,82 +526,82 @@ $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 -- CLASS
 ----------------------------
 -- XXX NOTICE: top_ref_id('class') = 1
-CREATE OR REPLACE FUNCTION class_id (text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION class_id (text) RETURNS integer AS $$
 	SELECT CASE WHEN $1='class' THEN 1 ELSE ref_id($1,1) END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION class_id (text,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION class_id (text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('class',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION class_id (text,text,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION class_id (text,text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('class',$1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION class_id (text,text,text,text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION class_id (text,text,text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$4 AND _id=class_id($1,$2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION class_full_name (bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION class_full_name (integer) RETURNS text AS $$
 	SELECT ref_full_name($1,1);
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- SCALAR
 ----------------------------
-CREATE OR REPLACE FUNCTION scalar_id (text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION scalar_id (text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('scalar'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- TYPE
 ----------------------------
-CREATE OR REPLACE FUNCTION type_id (a_ref text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION type_id (a_ref text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('type'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_id (a_parent text,a_ref text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION type_id (a_parent text,a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('type',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('type',$1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text,a_3 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text,a_3 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3,$4);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF bigint AS $$
+CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION type_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('type'));
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATE
 ----------------------------
-CREATE OR REPLACE FUNCTION state_id (a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION state_id (a_name text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('state'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION state_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATUS
 ----------------------------
-CREATE OR REPLACE FUNCTION status_id (a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION status_id (a_name text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('status'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION status_id (a_parent text,a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION status_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('status',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION status_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_subject_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 DECLARE
-	the_id		bigint;
+	the_id		integer;
 	the_time	timestamp;
 BEGIN
 	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
@@ -613,23 +613,23 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 	SELECT set_status($1,NULL,$2,$3);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type_id bigint,a_time timestamp with time zone) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer,a_time timestamp with time zone) RETURNS integer AS $$
 	SELECT set_status($1,$2,$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text,a_time timestamp) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp) RETURNS integer AS $$
 	SELECT set_status($1,status_id($2),$3);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text,a_time timestamp with time zone) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp with time zone) RETURNS integer AS $$
 	SELECT set_status($1,status_id($2),$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
 -- XXX important: this function does NOT change time of the status if it already exists
-CREATE OR REPLACE FUNCTION set_status (a_obj_id bigint,a_type text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text) RETURNS integer AS $$
 DECLARE
-	a_type_id	bigint := status_id(a_type);
-	the_id		bigint;
+	a_type_id	integer := status_id(a_type);
+	the_id		integer;
 BEGIN
 	SELECT INTO the_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
 	IF the_id IS NULL THEN
@@ -638,18 +638,18 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION reset_status (a_obj_id bigint,a_type text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION reset_status (a_obj_id integer,a_type text) RETURNS integer AS $$
 	SELECT set_status($1,status_id($2),now());
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION del_status (a_obj_id bigint,a_type text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION del_status (a_obj_id integer,a_type text) RETURNS void AS $$
 	DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,a__id bigint,statuses text[]) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,a__id integer,statuses text[]) RETURNS integer AS $$
 DECLARE
 	row	record;
 	n_has	boolean;
-	adds	bigint[];
-	dels	bigint[];
+	adds	integer[];
+	dels	integer[];
 BEGIN
 	FOR row IN
 		SELECT		t.obj_id,t.name,s.id IS NOT NULL AS has
@@ -666,24 +666,24 @@ BEGIN
 			adds := adds || row.obj_id;
 		END IF;
 	END LOOP;
-	IF adds>'{}'::bigint[] THEN
+	IF adds>'{}'::integer[] THEN
 		INSERT INTO status (object_id,type_id)
 		SELECT a_obj_id,obj_id FROM ref WHERE obj_id=ANY(adds);
 	END IF;
-	IF dels>'{}'::bigint[] THEN
+	IF dels>'{}'::integer[] THEN
 		DELETE FROM status WHERE object_id=a_obj_id AND type_id=ANY(dels);
 	END IF;
 	RETURN a_obj_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_statuses (a_obj_id bigint,parent text,statuses text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text) RETURNS integer AS $$
 	SELECT set_statuses($1,status_id($2),csplit($3));
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- PROP
 ----------------------------
-CREATE OR REPLACE FUNCTION prop_id (a_prop text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION prop_id (a_prop text) RETURNS integer AS $$
 DECLARE
 	pos integer;
 BEGIN
@@ -695,39 +695,39 @@ BEGIN
 		END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION prop_id (a_class_id bigint,a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION prop_id (a_class_id integer,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM prop WHERE name = $2 AND class_id = $1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION prop_id (a_class text,a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION prop_id (a_class text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM prop WHERE name = $2 AND class_id = class_id($1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION prop_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION prop_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION prop_prop (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION prop_prop (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_name(class_id)||':'||name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION prop_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION prop_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT class_full_name(class_id)||':'||name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION replace_prop (
-	a_obj_id	bigint,		-- $1
-	a_class_id	bigint,		-- $2
+	a_obj_id	integer,	-- $1
+	a_class_id	integer,	-- $2
 	a_name		text,		-- $3
-	a_type_id	bigint,		-- $4
-	a_no		bigint,		-- $5
+	a_type_id	integer,	-- $4
+	a_no		integer,	-- $5
 	a_def		text,		-- $6
 	a_is_in_table	boolean,	-- $7
 	a_can_be_null	boolean,	-- $8
 	a_is_required	boolean,	-- $9
 	a_is_repeated	boolean,	-- $10
 	a_label		text		-- $11
-) RETURNS bigint AS $$
+) RETURNS integer AS $$
 DECLARE
-	the_id	bigint := coalesce(a_obj_id,nextval('id'));
+	the_id	integer := a_obj_id;
 	prep	replace_data;
 BEGIN
-	prep := ('obj_id',the_id::text,NULL);
+	prep := (NULL,NULL,NULL);
 	prep := prepare_replace(prep,'class_id',	a_class_id);
 	prep := prepare_replace(prep,'name',		a_name);
 	prep := prepare_replace(prep,'type_id',		a_type_id);
@@ -737,8 +737,8 @@ BEGIN
 	prep := prepare_replace(prep,'can_be_null',	a_can_be_null);
 	prep := prepare_replace(prep,'is_required',	a_is_required);
 	prep := prepare_replace(prep,'is_repeated',	a_is_repeated);
-	IF NOT EXISTS (SELECT 1 FROM prop WHERE obj_id=the_id) THEN
-		EXECUTE 'INSERT INTO prop ('||prep.keys||') VALUES ('||prep.vals||')';
+	IF the_id IS NULL THEN
+		EXECUTE 'INSERT INTO prop ('||prep.keys||') VALUES ('||prep.vals||') RETURNING obj_id' INTO the_id;
 	ELSE
 		EXECUTE 'UPDATE prop SET '||prep.sets||' WHERE obj_id='||the_id;
 	END IF;
@@ -749,142 +749,142 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_prop (
-	a_no		bigint,		-- $1
+	a_no		integer,		-- $1
 	a_prop		text,		-- $2
-	a_type_id	bigint,		-- $3
+	a_type_id	integer,		-- $3
 	a_label		text,		-- $4
 	a_def		text,		-- $5
 	a_is_in_table	boolean,	-- $6
 	a_can_be_null	boolean,	-- $7
 	a_is_required	boolean,	-- $8
 	a_is_repeated	boolean		-- $9
-) RETURNS bigint AS $$
+) RETURNS integer AS $$
 	SELECT replace_prop(prop_id($2),class_id(substr($2,0,strpos($2,':'))),substr($2,strpos($2,':')+1),$3,$1,$5,$6,$7,$8,$9,$4);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_prop (a_no bigint,a_prop text,a_type_id bigint,a_label text,a_def text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_prop (a_no integer,a_prop text,a_type_id integer,a_label text,a_def text) RETURNS integer AS $$
 	SELECT set_prop($1,$2,$3,$4,$5,null,null,null,null);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_prop (a_no bigint,a_prop text,a_type_id bigint,a_label text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_prop (a_no integer,a_prop text,a_type_id integer,a_label text) RETURNS integer AS $$
 	SELECT set_prop($1,$2,$3,$4,null,null,null,null,null);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_prop (a_prop text,a_type_id bigint,a_label text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_prop (a_prop text,a_type_id integer,a_label text) RETURNS integer AS $$
 	SELECT set_prop(null,$1,$2,$3,null,null,null,null,null);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- IS SET VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION is_set_value (a_obj_id bigint,a_prop_id bigint) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION is_set_value (a_obj_id integer,a_prop_id integer) RETURNS boolean AS $$
 	SELECT EXISTS (SELECT 1 FROM value WHERE obj_id = $1 AND prop_id = $2);
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- GET VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_value (a_obj_id bigint,a_prop_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
 	SELECT coalesce(
 		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no DESC LIMIT 1),
 		(SELECT def FROM prop WHERE obj_id = $2)
 	)
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id bigint,a_prop_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no DESC LIMIT 1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_values (a_obj_id bigint,a_prop_id bigint) RETURNS SETOF text AS $$
+CREATE OR REPLACE FUNCTION get_values (a_obj_id integer,a_prop_id integer) RETURNS SETOF text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no ASC;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value (a_obj_id bigint,a_prop text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop text) RETURNS text AS $$
 	SELECT coalesce(
 		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2) ORDER BY no DESC LIMIT 1),
 		(SELECT def FROM prop WHERE obj_id = prop_id($2))
 	)
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id bigint,a_prop text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_prop text) RETURNS text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2) ORDER BY no DESC LIMIT 1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value (a_obj_id bigint,a_class text,a_prop text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_class text,a_prop text) RETURNS text AS $$
 	SELECT coalesce(
 		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2,$3) ORDER BY no DESC LIMIT 1),
 		(SELECT def FROM prop WHERE obj_id = prop_id($2,$3))
 	);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id bigint,a_class text,a_prop text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_class text,a_prop text) RETURNS text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2,$3) ORDER BY no DESC LIMIT 1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 AND no = $3;
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- GET TEXT VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id bigint,a_prop_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
 	SELECT coalesce(get_value($1,$2),'');
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id bigint,a_prop text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop text) RETURNS text AS $$
 	SELECT coalesce(get_value($1,$2),'');
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id bigint,a_prop text,a_default text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop text,a_default text) RETURNS text AS $$
 	SELECT coalesce(get_value($1,$2),$3);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_text_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS text AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3),'');
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- GET BIGINT VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_prop_id bigint) RETURNS bigint AS $$
-	SELECT coalesce(get_value($1,$2)::bigint,0);
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop_id integer) RETURNS integer AS $$
+	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_prop text) RETURNS bigint AS $$
-	SELECT coalesce(get_value($1,$2)::bigint,0);
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
+	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_bigint_value (a_obj_id bigint,a_class text,a_prop text) RETURNS bigint AS $$
-	SELECT coalesce(get_value($1,$2,$3)::bigint,0);
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_class text,a_prop text) RETURNS integer AS $$
+	SELECT coalesce(get_value($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_bigint_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS bigint AS $$
-	SELECT coalesce(get_value_by_no($1,$2,$3)::bigint,0);
+CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS integer AS $$
+	SELECT coalesce(get_value_by_no($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- GET INTEGER VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id bigint,a_prop_id bigint) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop_id integer) RETURNS integer AS $$
 	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id bigint,a_prop text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
 	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id bigint,a_class text,a_prop text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_class text,a_prop text) RETURNS integer AS $$
 	SELECT coalesce(get_value($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS integer AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- GET DOUBLE VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_double_value (a_obj_id bigint,a_prop_id bigint) RETURNS double precision AS $$
+CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_prop_id integer) RETURNS double precision AS $$
 	SELECT coalesce(get_value($1,$2)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_double_value (a_obj_id bigint,a_prop text) RETURNS double precision AS $$
+CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_prop text) RETURNS double precision AS $$
 	SELECT coalesce(get_value($1,$2)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_double_value (a_obj_id bigint,a_class text,a_prop text) RETURNS double precision AS $$
+CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_class text,a_prop text) RETURNS double precision AS $$
 	SELECT coalesce(get_value($1,$2,$3)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS double precision AS $$
+CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS double precision AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- SET VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION set_value (a_obj_id bigint,a_prop_id bigint,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS integer AS $$
 DECLARE
-	the_id	bigint;
+	the_id	integer;
 	the_def	text;
 BEGIN
 	IF a_value IS NULL THEN
@@ -906,22 +906,22 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id bigint,a_prop text,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
 	RETURN set_value(a_obj_id,prop_id(a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id bigint,a_prop text,a_value bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value integer) RETURNS integer AS $$
 BEGIN
 	RETURN set_value(a_obj_id,prop_id(a_prop),a_value::text);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_value (a_obj_id bigint,a_class text,a_prop text,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_class text,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
 	RETURN set_value(a_obj_id,prop_id(a_class,a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
-CREATE OR REPLACE FUNCTION set_value_if_not (a_obj_id bigint,a_prop text,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value_if_not (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
 	IF NOT EXISTS (SELECT 1 FROM value WHERE obj_id=a_obj_id AND prop_id=prop_id(a_prop)) THEN
 		RETURN set_value(a_obj_id,a_prop,a_value);
@@ -930,9 +930,9 @@ BEGIN
 	END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer,a_value text) RETURNS integer AS $$
 DECLARE
-	the_id	bigint;
+	the_id	integer;
 	the_def	text;
 BEGIN
 	IF a_value IS NULL THEN
@@ -954,12 +954,12 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_values (a_obj_id bigint,a_prop_id bigint,a_values text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_values (a_obj_id integer,a_prop_id integer,a_values text) RETURNS void AS $$
 BEGIN
 	PERFORM delete_value(a_obj_id,a_prop_id),add_values(a_obj_id,a_prop_id,a_values);
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_values (a_obj_id bigint,a_prop text,a_values text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION set_values (a_obj_id integer,a_prop text,a_values text) RETURNS void AS $$
 BEGIN
 	PERFORM set_values(a_obj_id,prop_id(a_prop),a_values);
 END;
@@ -968,42 +968,42 @@ $$ LANGUAGE plpgsql VOLATILE;
 ----------------------------
 -- DELETE VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION delete_value (a_obj_id bigint,a_prop_id bigint) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION delete_value (a_obj_id integer,a_prop_id integer) RETURNS void AS $$
 	DELETE FROM value WHERE obj_id = $1 AND prop_id = $2;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION delete_value (a_obj_id bigint,a_prop text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION delete_value (a_obj_id integer,a_prop text) RETURNS void AS $$
 	DELETE FROM value WHERE obj_id = $1 AND prop_id = prop_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION delete_value (a_obj_id bigint,a_class text,a_prop text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION delete_value (a_obj_id integer,a_class text,a_prop text) RETURNS void AS $$
 	DELETE FROM value WHERE obj_id = $1 AND prop_id = prop_id($2,$3);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION delete_value_by_no (a_obj_id bigint,a_prop_id bigint,a_no bigint) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION delete_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS void AS $$
 	DELETE FROM value WHERE obj_id = $1 AND prop_id = $2 AND no = $3;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- DELETE VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION verify_value (a_obj_id bigint,a_prop text,a_value text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION verify_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 	SELECT CASE WHEN get_value($1,$2)=$3 THEN set_value($1,$2||'_verified',$3) END;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- ADD/INSERT VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION add_value (a_obj_id bigint,a_prop_id bigint,text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION add_value (a_obj_id integer,a_prop_id integer,text) RETURNS void AS $$
 	INSERT INTO value (obj_id,prop_id,value,
 		no
 	) VALUES ($1,$2,$3,
 		(SELECT coalesce(max(no),0)+1 FROM value WHERE obj_id = $1 AND prop_id = $2)
 	);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION add_value (a_obj_id bigint,a_prop text,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION add_value (a_obj_id integer,a_prop text,a_value text) RETURNS void AS $$
 BEGIN
 	PERFORM add_value(a_obj_id,prop_id(a_prop),a_value);
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION add_values (a_obj_id bigint,a_prop_id bigint,a_values text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION add_values (a_obj_id integer,a_prop_id integer,a_values text) RETURNS void AS $$
 DECLARE
 	the_pos		integer;
 	the_value	text;
@@ -1020,16 +1020,16 @@ BEGIN
 	END IF;
 END
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION add_values (a_obj_id bigint,a_prop text,a_values text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION add_values (a_obj_id integer,a_prop text,a_values text) RETURNS void AS $$
 BEGIN
 	PERFORM add_values(a_obj_id,prop_id(a_prop),a_values);
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION insert_value (a_obj_id bigint,a_prop_id bigint,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION insert_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS void AS $$
 	UPDATE value SET no=no+1 WHERE obj_id = $1 AND prop_id = $2;
 	INSERT INTO value (obj_id,prop_id,value,no) VALUES ($1,$2,$3,0);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION insert_value (a_obj_id bigint,a_prop text,a_value text) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION insert_value (a_obj_id integer,a_prop text,a_value text) RETURNS void AS $$
 BEGIN
 	PERFORM insert_value(a_obj_id,prop_id(a_prop),a_value);
 END;
@@ -1038,11 +1038,11 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 ----------------------------
 -- SET OLD VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop_id bigint,a_value text,a_user_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id integer,a_prop_id integer,a_value text,a_user_id integer) RETURNS integer AS $$
 	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,$2,$3,now(),$4);
 	SELECT $1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_old_value (a_obj_id bigint,a_prop text,a_value text,a_user_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_old_value (a_obj_id integer,a_prop text,a_value text,a_user_id integer) RETURNS integer AS $$
 	INSERT INTO old_value (obj_id,prop_id,value,old_time,user_id) VALUES ($1,prop_id($2),$3,now(),$4);
 	SELECT $1;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
@@ -1050,11 +1050,11 @@ $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 ----------------------------
 -- IN VALUES
 ----------------------------
-CREATE OR REPLACE FUNCTION in_values (a_obj_id bigint,a_prop_id bigint,a_value text) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION in_values (a_obj_id integer,a_prop_id integer,a_value text) RETURNS boolean AS $$
 	SELECT CASE WHEN EXISTS (SELECT 1 FROM value WHERE obj_id=$1 AND prop_id=$2 AND value=$3)
 	THEN TRUE ELSE FALSE END;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION in_values (a_obj_id bigint,a_prop text,a_value text) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION in_values (a_obj_id integer,a_prop text,a_value text) RETURNS boolean AS $$
 	SELECT CASE WHEN EXISTS (SELECT 1 FROM value WHERE obj_id=$1 AND prop_id=prop_id($2) AND value=$3)
 	THEN TRUE ELSE FALSE END;
 $$ LANGUAGE sql STABLE STRICT;
@@ -1062,13 +1062,13 @@ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 -- HIERARCHY VALUES
 ----------------------------
-CREATE OR REPLACE FUNCTION find_obj_in_hierarchy (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION find_obj_in_hierarchy (a_obj_id integer,a_prop_id integer,a_path text) RETURNS integer AS $$
 DECLARE
 	field		text;
 	class		text;
 	next_path	text;
 	pos		integer := 0;
-	n_obj_id	bigint;
+	n_obj_id	integer;
 BEGIN
 	IF is_set_value(a_obj_id,a_prop_id) THEN
 		RETURN a_obj_id;
@@ -1099,64 +1099,48 @@ BEGIN
 	END IF;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id integer,a_prop_id integer,a_path text) RETURNS text AS $$
 	SELECT get_value(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id integer,a_prop text,a_path text) RETURNS text AS $$
 	SELECT get_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS SETOF text AS $$
+CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id integer,a_prop_id integer,a_path text) RETURNS SETOF text AS $$
 	SELECT get_values(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id bigint,a_prop text,a_path text) RETURNS SETOF text AS $$
+CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id integer,a_prop text,a_path text) RETURNS SETOF text AS $$
 	SELECT get_values(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer,a_prop_id integer,a_path text) RETURNS integer AS $$
 	SELECT get_integer_value(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer,a_prop text,a_path text) RETURNS integer AS $$
 	SELECT get_integer_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_bigint (a_obj_id bigint,a_prop_id bigint,a_path text) RETURNS bigint AS $$
-	SELECT get_bigint_value(find_obj_in_hierarchy($1,$2,$3),$2);
+CREATE OR REPLACE FUNCTION get_integer (a_obj_id integer,a_prop_id integer,a_path text) RETURNS integer AS $$
+	SELECT get_integer_value(find_obj_in_hierarchy($1,$2,$3),$2);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_bigint_hierarchy_value (a_obj_id bigint,a_prop text,a_path text) RETURNS bigint AS $$
-	SELECT get_bigint_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
-$$ LANGUAGE sql STABLE STRICT;
-
---- VALUES DEBUG
-CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
-	SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN obj_full_name($1::integer) ELSE $1 END
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id bigint) RETURNS text AS $$
-	SELECT	cjoin(val)
-	FROM	(
-		SELECT		c.name||':'||p.name||'="'||v.value||'"' AS val
-		FROM		value		v
-		JOIN		prop		p ON p.obj_id=v.prop_id
-		JOIN		ref		c ON c.obj_id=p.class_id
-		WHERE		v.obj_id=$1
-		ORDER BY	c.name,p.name,v.no
-	)	AS a
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer,a_prop text,a_path text) RETURNS integer AS $$
+	SELECT get_integer_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- TAG
 ----------------------------
-CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('tag'));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_tag (a_obj_id bigint,a_tag_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS integer AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_tag (a_obj_id bigint,a_tag text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag text) RETURNS integer AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,tag_id($2)) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- OBJECT
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
 	class	text;
 	name	text;
@@ -1169,13 +1153,13 @@ BEGIN
 	RETURN name;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id bigint) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS integer AS $$
 DECLARE
 	pos	integer := strpos(a_object,':');
-	res	bigint;
+	res	integer;
 BEGIN
 	IF pos>0 THEN
 		EXECUTE 'SELECT '||substr(a_object,0,pos)||'_id('''||substr(a_object,pos+1)||''')' INTO res;
@@ -1184,52 +1168,55 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+--- VALUES DEBUG
+CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
+	SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN obj_full_name($1::integer) ELSE $1 END
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
+	SELECT	cjoin(val)
+	FROM	(
+		SELECT		c.name||':'||p.name||'="'||v.value||'"' AS val
+		FROM		value		v
+		JOIN		prop		p ON p.obj_id=v.prop_id
+		JOIN		ref		c ON c.obj_id=p.class_id
+		WHERE		v.obj_id=$1
+		ORDER BY	c.name,p.name,v.no
+	)	AS a
+$$ LANGUAGE sql STABLE STRICT;
+
 ----------------------------
 -- BLACKLIST
 ----------------------------
-CREATE OR REPLACE FUNCTION blacklist_id (a_class_id bigint,a_user_id bigint,a_name text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION blacklist_id (a_class_id integer,a_user_id integer,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM blacklist WHERE class_id=$1 AND user_id=$2 AND name=$3;
 $$ LANGUAGE sql STABLE STRICT;
--- CREATE OR REPLACE FUNCTION in_blacklist (a_name text,a_class_id bigint,a_user_id bigint) RETURNS boolean AS $$
+-- CREATE OR REPLACE FUNCTION in_blacklist (a_name text,a_class_id integer,a_user_id integer) RETURNS boolean AS $$
 -- 	SELECT EXISTS (
 -- 		SELECT 1 FROM blacklist WHERE $1 LIKE name AND class_id=$2 AND user_id IN (
 -- 			SELECT client_resellers($3,for_myself)
 -- 		)
 -- 	)
 -- $$ LANGUAGE sql STABLE STRICT;
--- CREATE OR REPLACE FUNCTION blacklist_check (a_name text,a_class text,a_user_id bigint) RETURNS text AS $$
+-- CREATE OR REPLACE FUNCTION blacklist_check (a_name text,a_class text,a_user_id integer) RETURNS text AS $$
 --	SELECT CASE WHEN in_blacklist($1,class_id($2),$3) THEN $1 ELSE NULL END
 -- $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION replace_blacklist (
-	a_obj_id	bigint,
-	a_class_id	bigint,
-	a_user_id	bigint,
+	a_obj_id	integer,
+	a_class_id	integer,
+	a_user_id	integer,
 	a_name		text,
 	a_label		text
-) RETURNS bigint AS $$
+) RETURNS integer AS $$
 DECLARE
-	the_id	bigint := coalesce(a_obj_id,nextval('id'));
-	keys	text	:= 'obj_id';
-	vals	text	:= the_id;
-	sets	text	:= '';
+	the_id	integer := a_obj_id;
+	prep	replace_data;
 BEGIN
-	IF a_class_id IS NOT NULL THEN
-		keys := keys || ',class_id';
-		vals := vals || ','||a_class_id;
-		sets := sets || ',class_id='||a_class_id;
-	END IF;
-	IF a_user_id IS NOT NULL THEN
-		keys := keys || ',user_id';
-		vals := vals || ','||a_user_id;
-		sets := sets || ',user_id='||a_user_id;
-	END IF;
-	IF a_name IS NOT NULL THEN
-		keys := keys || ',name';
-		vals := vals || ','||quote_literal(a_name);
-		sets := sets || ',name='||quote_literal(a_name);
-	END IF;
-	IF NOT EXISTS (SELECT 1 FROM blacklist WHERE obj_id=the_id) THEN
-		EXECUTE 'INSERT INTO blacklist ('||keys||') VALUES ('||vals||')';
+	prep := (NULL,NULL,NULL);
+	prep := prepare_replace(prep,'class_id',	a_class_id);
+	prep := prepare_replace(prep,'user_id',		a_user_id);
+	prep := prepare_replace(prep,'name',		a_name);
+	IF the_id IS NULL THEN
+		EXECUTE 'INSERT INTO blacklist ('||keys||') VALUES ('||vals||') RETURNING obj_id' INTO the_id;
 	ELSIF sets!='' THEN
 		EXECUTE 'UPDATE blacklist SET '||substr(sets,2)||' WHERE obj_id='||the_id;
 	END IF;
@@ -1239,17 +1226,17 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_blacklist (a_class_id bigint,a_user_id bigint,a_name text,a_label text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION set_blacklist (a_class_id integer,a_user_id integer,a_name text,a_label text) RETURNS integer AS $$
 	SELECT replace_blacklist(blacklist_id($1,$2,$3),$1,$2,$3,$4);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
--- CREATE OR REPLACE FUNCTION set_blacklist (a_class text,a_user text,a_name text,a_label text) RETURNS bigint AS $$
+-- CREATE OR REPLACE FUNCTION set_blacklist (a_class text,a_user text,a_name text,a_label text) RETURNS integer AS $$
 -- 	SELECT set_blacklist(class_id($1),client_id($2),$3,$4);
 -- $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- SESSION
 ----------------------------
-CREATE OR REPLACE FUNCTION init_session (a_user_id bigint) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION init_session (a_user_id integer) RETURNS integer AS $$
 BEGIN
 	EXECUTE 'CREATE TEMPORARY TABLE session (name text,value text);';
 	EXECUTE 'INSERT INTO session VALUES (''user_id'','''||a_user_id||''');';
@@ -1268,8 +1255,8 @@ BEGIN
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_session_user_id () RETURNS bigint AS $$
-	SELECT str2num(get_session_value('user_id'))::bigint;
+CREATE OR REPLACE FUNCTION get_session_user_id () RETURNS integer AS $$
+	SELECT str2num(get_session_value('user_id'))::integer;
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------

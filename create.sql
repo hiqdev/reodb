@@ -1,10 +1,9 @@
 -- $Header: /home/sol/usr/cvs/reodb/create.sql,v 1.2 2007/08/31 11:16:18 sol Exp $
 
-CREATE SEQUENCE "id" START 1000000;
-
+CREATE SEQUENCE "obj_id_seq" START 1000000;
 CREATE TABLE obj (
-	obj_id		bigint		NOT NULL DEFAULT nextval('id'),
-	class_id	bigint		NOT NULL,
+	obj_id		integer		NOT NULL DEFAULT nextval('obj_id_seq'),
+	class_id	integer		NOT NULL,
 	label		text		NULL,
 	descr		text		NULL,
 	create_time	timestamp	NOT NULL DEFAULT now(),
@@ -13,8 +12,8 @@ CREATE TABLE obj (
 SELECT now()::timestamp without time zone AS old_time,* INTO old_obj FROM obj limit 0;
 
 CREATE TABLE ref (
-	obj_id		bigint		NOT NULL,
-	_id		bigint		NOT NULL,
+	obj_id		integer		NOT NULL,
+	_id		integer		NOT NULL,
 	name		text		NOT NULL DEFAULT '',
 	no		integer		NULL,
 	label		text		NULL,
@@ -23,10 +22,10 @@ CREATE TABLE ref (
 SELECT * INTO del_ref FROM ref LIMIT 0;
 
 CREATE TABLE prop (
-	obj_id		bigint		NOT NULL,
-	class_id	bigint		NOT NULL,
+	obj_id		integer		NOT NULL,
+	class_id	integer		NOT NULL,
 	name		text		NOT NULL,
-	type_id		bigint		NOT NULL,
+	type_id		integer		NOT NULL,
 	no		integer		NOT NULL DEFAULT 0,
 	def		text		NULL,
 	is_in_table	boolean		NOT NULL DEFAULT FALSE,
@@ -37,70 +36,75 @@ CREATE TABLE prop (
 );
 SELECT * INTO del_prop FROM prop LIMIT 0;
 
+CREATE SEQUENCE "value_id_seq" START 1000000;
 CREATE TABLE value (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
-	obj_id		bigint		NOT NULL,
-	prop_id		bigint		NOT NULL,
+	id		integer		NOT NULL DEFAULT nextval('value_id_seq'),
+	obj_id		integer		NOT NULL,
+	prop_id		integer		NOT NULL,
 	no		integer		NOT NULL DEFAULT 0,
 	value		text		NOT NULL DEFAULT ''
 );
 SELECT * INTO del_value FROM value LIMIT 0;
 
 CREATE TABLE old_value (
-	obj_id		bigint		NULL,
-	prop_id		bigint		NULL,
+	obj_id		integer		NULL,
+	prop_id		integer		NULL,
 	no		integer		NULL,
 	value		text		NULL,
 	old_time	timestamp	NULL,
-	user_id		bigint		NULL
+	user_id		integer		NULL
 );
 
+CREATE SEQUENCE "user_value_id_seq" START 1000000;
 CREATE TABLE user_value (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
-	obj_id		bigint		NOT NULL,
-	user_id		bigint		NOT NULL,
-	prop_id		bigint		NOT NULL,
+	id		integer		NOT NULL DEFAULT nextval('user_value_id_seq'),
+	obj_id		integer		NOT NULL,
+	user_id		integer		NOT NULL,
+	prop_id		integer		NOT NULL,
 	no		integer		NOT NULL DEFAULT 0,
 	value		text		NOT NULL DEFAULT ''
 );
 SELECT * INTO del_user_value FROM user_value LIMIT 0;
 
+CREATE SEQUENCE "tag_id_seq" START 1000000;
 CREATE TABLE tag (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
-	obj_id		bigint		NOT NULL,
-	tag_id		bigint		NOT NULL
+	id		integer		NOT NULL DEFAULT nextval('tag_id_seq'),
+	obj_id		integer		NOT NULL,
+	tag_id		integer		NOT NULL
 );
 SELECT * INTO del_tag FROM tag limit 0;
 
+CREATE SEQUENCE "tag2_id_seq" START 1000000;
 CREATE TABLE tag2 (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
-	src_id		bigint		NOT NULL,
-	dst_id		bigint		NOT NULL,
-	tag_id		bigint		NOT NULL
+	id		integer		NOT NULL DEFAULT nextval('tag2_id_seq'),
+	src_id		integer		NOT NULL,
+	dst_id		integer		NOT NULL,
+	tag_id		integer		NOT NULL
 );
 SELECT * INTO del_tag2 FROM tag2 limit 0;
 
 CREATE TABLE link (
-	obj_id		bigint		NOT NULL,
-	src_id		bigint		NOT NULL,
-	dst_id		bigint		NOT NULL,
-	tag_id		bigint		NOT NULL
+	obj_id		integer		NOT NULL,
+	src_id		integer		NOT NULL,
+	dst_id		integer		NOT NULL,
+	tag_id		integer		NOT NULL
 );
 SELECT now()::timestamp without time zone AS old_time,* INTO old_link FROM link limit 0;
 
+CREATE SEQUENCE "status_id_seq" START 1000000;
 CREATE TABLE status (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
-	object_id	bigint		NOT NULL,
-	subject_id	bigint		NULL,
-	type_id		bigint		NOT NULL,
+	id		integer		NOT NULL DEFAULT nextval('status_id_seq'),
+	object_id	integer		NOT NULL,
+	subject_id	integer		NULL,
+	type_id		integer		NOT NULL,
 	time		timestamp	NOT NULL DEFAULT now()
 );
 SELECT now()::timestamp without time zone AS old_time,* INTO old_status FROM status limit 0;
 
 CREATE TABLE blacklist (
-	obj_id		bigint		NOT NULL,
-	class_id	bigint		NOT NULL,
-	user_id		bigint		NOT NULL,
+	obj_id		integer		NOT NULL,
+	class_id	integer		NOT NULL,
+	user_id		integer		NOT NULL,
 	name		text		NOT NULL,
 	for_myself	boolean		NOT NULL DEFAULT TRUE
 );
@@ -112,8 +116,9 @@ CREATE TABLE wrong_login (
 	time		timestamp	NOT NULL DEFAULT now()
 );
 
+CREATE SEQUENCE "log_id_seq" START 1000000;
 CREATE TABLE log (
-	id		bigint		NOT NULL DEFAULT nextval('id'),
+	id		integer		NOT NULL DEFAULT nextval('log_id_seq'),
 	login		text		NOT NULL,
 	ip		inet		NOT NULL,
 	time		timestamp	NOT NULL,
@@ -122,7 +127,7 @@ CREATE TABLE log (
 );
 
 CREATE TABLE log_var (
-	id		bigint		NOT NULL,
+	id		integer		NOT NULL,
 	name		text		NOT NULL,
 	value		text		NOT NULL
 );
