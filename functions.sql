@@ -7,11 +7,6 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer) AS $$
-	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
-		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
 	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
 		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
@@ -66,7 +61,7 @@ CREATE OR REPLACE FUNCTION ucf (text) RETURNS text AS $$
 	SELECT upper(substr($1,1,1))||substr($1,2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_html (text) RETURNS text AS $$
-        SELECT replace(replace(replace($1,'>','&gt;'),'<','&lt;'),E'\n','<br>');
+	SELECT replace(replace(replace($1,'>','&gt;'),'<','&lt;'),E'\n','<br>');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION passgen (length integer) RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,$1);
@@ -80,6 +75,19 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text) RETURNS numeric AS $$
 	SELECT CASE WHEN $1 ~ E'^[-+]?\\d*\\.?\\d*$' THEN $1::numeric ELSE 0 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
+DECLARE
+	r inet;
+BEGIN
+	BEGIN
+		SELECT INTO r a::inet;
+	EXCEPTION
+		WHEN OTHERS THEN
+			-- do nothing
+	END;
+	RETURN r;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2time (a text) RETURNS timestamp AS $$
 DECLARE
 	t timestamp;
