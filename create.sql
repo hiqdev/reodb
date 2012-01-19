@@ -89,7 +89,7 @@ CREATE TABLE link (
 	dst_id		integer		NOT NULL,
 	tag_id		integer		NOT NULL
 );
-SELECT now()::timestamp without time zone AS old_time,* INTO old_link FROM link limit 0;
+SELECT NULL::timestamp AS old_time,NULL::integer AS user_id,* INTO old_link FROM link LIMIT 0;
 
 CREATE SEQUENCE "status_id_seq" START 1000000;
 CREATE TABLE status (

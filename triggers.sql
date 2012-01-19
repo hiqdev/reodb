@@ -37,7 +37,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION odb_before_change_trigger () RETURNS "trigger" AS $$
 BEGIN
-	EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+	EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),NULL,* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
 	IF TG_OP='UPDATE' THEN
 		RETURN NEW;
 	ELSE
