@@ -12,6 +12,17 @@ CREATE AGGREGATE cjoin (text) (
 	STYPE = text
 );
 
+CREATE OR REPLACE FUNCTION cjoin_state (state text,value integer) RETURNS text AS $$
+	SELECT CASE WHEN $1 IS NULL THEN $2::text ELSE (
+		CASE WHEN $2 IS NULL THEN $1 ELSE $1||','||$2::text END
+	) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+CREATE AGGREGATE cjoin (integer) (
+	SFUNC = cjoin_state,
+	STYPE = text
+);
+
 -- SJOIN
 
 CREATE OR REPLACE FUNCTION sjoin_state (state text,value text) RETURNS text AS $$
