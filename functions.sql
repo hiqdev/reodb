@@ -2,12 +2,17 @@
 
 -- REPLACE
 CREATE TYPE replace_data AS (keys text,vals text,sets text);
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer) AS $$
 	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
 		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value double precision) AS $$
 	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
 		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
@@ -70,11 +75,31 @@ CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
-	SELECT CASE WHEN $1 ~ E'^[-+]?\\d*\\.?\\d*$' THEN $1::numeric ELSE $2 END;
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+DECLARE
+	r numeric;
+BEGIN
+	BEGIN
+		SELECT INTO r a::numeric;
+	EXCEPTION
+		WHEN OTHERS THEN
+			-- do nothing
+	END;
+	RETURN coalesce(r,def);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text) RETURNS numeric AS $$
-	SELECT CASE WHEN $1 ~ E'^[-+]?\\d*\\.?\\d*$' THEN $1::numeric ELSE 0 END;
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+DECLARE
+	r numeric;
+BEGIN
+	BEGIN
+		SELECT INTO r a::numeric;
+	EXCEPTION
+		WHEN OTHERS THEN
+			-- do nothing
+	END;
+	RETURN coalesce(r,0);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
 DECLARE
 	r inet;
@@ -425,11 +450,11 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_descr (a_obj_id integer) RETURNS text AS $$
 	SELECT descr FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text) RETURNS void AS $$
-	UPDATE obj SET label=$2 WHERE obj_id=$1;
+CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text) RETURNS integer AS $$
+	UPDATE obj SET label=$2 WHERE obj_id=$1 RETURNING obj_id;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text,a_descr text) RETURNS void AS $$
-	UPDATE obj SET label=$2,descr=$3 WHERE obj_id=$1;
+CREATE OR REPLACE FUNCTION set_obj_label (a_obj_id integer,a_label text,a_descr text) RETURNS integer AS $$
+	UPDATE obj SET label=$2,descr=$3 WHERE obj_id=$1 RETURNING obj_Id;
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_obj_descr (a_obj_id integer,a_descr text) RETURNS void AS $$
 	UPDATE obj SET descr=coalesce($2,'') WHERE obj_id=$1;
@@ -607,6 +632,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type text,a_period interval) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 DECLARE
 	the_id		integer;
@@ -1132,6 +1163,36 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer,a_prop text,a_path text) RETURNS integer AS $$
 	SELECT get_integer_value(find_obj_in_hierarchy($1,prop_id($2),$3),prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
+-- PARAM
+----------------------------
+CREATE OR REPLACE FUNCTION param_id (a_name text) RETURNS integer AS $$
+	SELECT prop_id(class_id('param'),$1);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION set_param (a_name text) RETURNS integer AS $$
+	SELECT replace_prop(param_id($1),class_id('param'),$1,scalar_id('label'),NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_param (a_obj_id integer,a_name text,a_value text) RETURNS integer AS $$
+DECLARE
+	the_id	integer;
+	par_id	integer := param_id(a_name);
+BEGIN
+	IF a_value IS NULL THEN
+		DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=par_id;
+	ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) THEN
+		SELECT INTO the_id id FROM value WHERE obj_id=a_obj_id AND prop_id=par_id;
+		IF the_id IS NOT NULL THEN
+			UPDATE value SET value=a_value WHERE id=the_id;
+		ELSE
+			INSERT INTO value (obj_id,prop_id,value)
+			VALUES (a_obj_id,coalesce(par_id,set_param(a_name)),a_value)
+			RETURNING id INTO the_id;
+		END IF;
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TAG
