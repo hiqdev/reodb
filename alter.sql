@@ -90,7 +90,7 @@ CREATE INDEX			link_dst_id_idx					ON link (dst_id);
 
 -- STATUS
 ALTER TABLE ONLY status		ADD CONSTRAINT status_id_pkey			PRIMARY KEY (id);
-ALTER TABLE ONLY status		ADD CONSTRAINT status_type_id_object_id_uniq	UNIQUE (time,type_id,object_id);
+ALTER TABLE ONLY status		ADD CONSTRAINT status_type_id_object_id_uniq	UNIQUE (type_id,object_id);
 ALTER TABLE ONLY status		ADD CONSTRAINT status_object_id_fkey		FOREIGN KEY (object_id)	REFERENCES obj (obj_id)
 										ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY status		ADD CONSTRAINT status_subject_id_fkey		FOREIGN KEY (subject_id) REFERENCES obj (obj_id)
