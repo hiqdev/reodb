@@ -1,4 +1,4 @@
-
+-- OBJ
 CREATE OR REPLACE VIEW obj_h AS
 	SELECT		o.obj_id,r.name AS class,obj_name(o.obj_id) AS name,o.label,o.descr,
 			create_time,update_time
@@ -6,6 +6,7 @@ CREATE OR REPLACE VIEW obj_h AS
 	LEFT JOIN	ref	r ON r.obj_id=o.class_id
 ;
 
+-- REF
 CREATE OR REPLACE VIEW ref_h AS
 	SELECT		obj_id,_id,no,ref_full_name(obj_id) AS name,r.label
 	FROM		ref	r
@@ -24,6 +25,7 @@ CREATE OR REPLACE VIEW state_h AS
 	SELECT * FROM ref_h WHERE name like 'state%';
 ;
 
+-- PROP
 CREATE OR REPLACE VIEW prop_h AS
 	SELECT		obj_id,no,class_full_name(p.class_id) AS class,name,ref_full_name(type_id) AS type,
 			to_sign(is_in_table)||to_sign(can_be_null)||to_sign(is_required)||to_sign(is_repeated) AS TNSR,
@@ -33,6 +35,7 @@ CREATE OR REPLACE VIEW prop_h AS
 	ORDER BY	class,no
 ;
 
+-- VALUE
 CREATE OR REPLACE VIEW value_h AS
 	SELECT		id,obj_id,prop_id,
 			class_full_name(class_id)	AS class,
@@ -42,6 +45,14 @@ CREATE OR REPLACE VIEW value_h AS
 	FROM		value	v
 	LEFT JOIN	obj	o USING (obj_id)
 	ORDER BY	class,name,prop,no
+;
+
+-- PARAM
+CREATE OR REPLACE VIEW paramz AS
+	SELECT		v.id,v.obj_id,v.prop_id,p.name,v.value
+	FROM		value	v
+	JOIN		prop	p ON p.obj_id=v.prop_id
+	WHERE		p.class_id=class_id('param')
 ;
 
 -- STATUS
