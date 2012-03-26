@@ -8,6 +8,7 @@ SELECT set_ref('status',		'{lang:Status}');
 SELECT set_ref('class',			'{lang:Class}');
 SELECT set_ref('class,ref',		'{lang:Reference}');
 SELECT set_ref('class,prop',		'{lang:Property}');
+SELECT set_ref('class,param',		'{lang:Param}');
 SELECT set_ref('class,link',		'{lang:Link}');
 SELECT set_ref('class,blacklist',	'{lang:Blacklist}');
 
