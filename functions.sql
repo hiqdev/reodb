@@ -27,6 +27,11 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value inet) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
+		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 -- DIFF
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
@@ -741,6 +746,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION prop_id (a_class text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM prop WHERE name = $2 AND class_id = class_id($1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION get_prop_def (a_obj_id integer) RETURNS text AS $$
+	SELECT def FROM prop WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION prop_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -821,55 +829,27 @@ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 -- GET VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
-	SELECT coalesce(
-		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no DESC LIMIT 1),
-		(SELECT def FROM prop WHERE obj_id = $2)
-	)
-$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
-	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no DESC LIMIT 1;
+	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no ASC LIMIT 1;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop_id integer,a_default text) RETURNS text AS $$
+	SELECT coalesce(get_value_non_def($1,$2),$3);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
+	SELECT get_value($1,$2,get_prop_def($2));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_values (a_obj_id integer,a_prop_id integer) RETURNS SETOF text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 ORDER BY no ASC;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop text) RETURNS text AS $$
-	SELECT coalesce(
-		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2) ORDER BY no DESC LIMIT 1),
-		(SELECT def FROM prop WHERE obj_id = prop_id($2))
-	)
-$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_prop text) RETURNS text AS $$
-	SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2) ORDER BY no DESC LIMIT 1;
+	SELECT get_value_non_def($1,prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_class text,a_prop text) RETURNS text AS $$
-	SELECT coalesce(
-		(SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2,$3) ORDER BY no DESC LIMIT 1),
-		(SELECT def FROM prop WHERE obj_id = prop_id($2,$3))
-	);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_class text,a_prop text) RETURNS text AS $$
-	SELECT value FROM value WHERE obj_id = $1 AND prop_id = prop_id($2,$3) ORDER BY no DESC LIMIT 1;
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop text) RETURNS text AS $$
+	SELECT get_value($1,prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS text AS $$
 	SELECT value FROM value WHERE obj_id = $1 AND prop_id = $2 AND no = $3;
 $$ LANGUAGE sql STABLE STRICT;
-
-----------------------------
--- GET TEXT VALUE
-----------------------------
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop_id integer) RETURNS text AS $$
-	SELECT coalesce(get_value($1,$2),'');
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop text) RETURNS text AS $$
-	SELECT coalesce(get_value($1,$2),'');
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value (a_obj_id integer,a_prop text,a_default text) RETURNS text AS $$
-	SELECT coalesce(get_value($1,$2),$3);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_text_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS text AS $$
-	SELECT coalesce(get_value_by_no($1,$2,$3),'');
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- GET BIGINT VALUE
