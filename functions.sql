@@ -844,6 +844,9 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_value_non_def (a_obj_id integer,a_prop text) RETURNS text AS $$
 	SELECT get_value_non_def($1,prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop text,a_default text) RETURNS text AS $$
+	SELECT get_value($1,prop_id($2),$3);
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_value (a_obj_id integer,a_prop text) RETURNS text AS $$
 	SELECT get_value($1,prop_id($2));
 $$ LANGUAGE sql STABLE STRICT;
@@ -860,9 +863,6 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
 	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_class text,a_prop text) RETURNS integer AS $$
-	SELECT coalesce(get_value($1,$2,$3)::integer,0);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS integer AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
@@ -876,9 +876,6 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
 	SELECT coalesce(get_value($1,$2)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_class text,a_prop text) RETURNS integer AS $$
-	SELECT coalesce(get_value($1,$2,$3)::integer,0);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS integer AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::integer,0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
@@ -891,9 +888,6 @@ CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_prop_id integer)
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_prop text) RETURNS double precision AS $$
 	SELECT coalesce(get_value($1,$2)::double precision, 0);
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_double_value (a_obj_id integer,a_class text,a_prop text) RETURNS double precision AS $$
-	SELECT coalesce(get_value($1,$2,$3)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS double precision AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::double precision, 0);
