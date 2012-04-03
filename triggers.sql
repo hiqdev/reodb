@@ -49,7 +49,9 @@ $$ LANGUAGE plpgsql;
 -- OBJ
 CREATE OR REPLACE FUNCTION update_time_trigger () RETURNS "trigger" AS $$
 BEGIN
-	NEW.update_time := 'now';
+	IF NEW.update_time=OLD.update_time THEN
+		NEW.update_time := 'now';
+	END IF;
 	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
