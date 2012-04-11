@@ -236,6 +236,13 @@ CREATE OR REPLACE FUNCTION seconds2time (integer) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
+-- DATE/TIME OPERATIONS
+----------------------------
+CREATE OR REPLACE FUNCTION extend_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+	SELECT $1+'1year'::interval*$2;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
 -- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
 ----------------------------
 CREATE OR REPLACE FUNCTION to_second () RETURNS timestamp AS $$
@@ -1189,7 +1196,7 @@ DECLARE
 	class	text;
 	name	text;
 BEGIN
-	SELECT INTO class,name r.name,get_value(obj_id,'class','obj_name')
+	SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name')
 	FROM ref r WHERE obj_id = (SELECT class_id FROM obj WHERE obj_id=$1);
 	IF name IS NOT NULL THEN
 		EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||$1 INTO name;
