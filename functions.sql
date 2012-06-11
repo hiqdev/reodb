@@ -200,13 +200,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
+-- OBSOLETE AS OF 9.1
+--	CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
+--		AS '$libdir/pgcrypto', 'pg_crypt'
+--	LANGUAGE C IMMUTABLE STRICT;
+--	CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
+--		AS '$libdir/pgcrypto', 'pg_gen_salt'
+--	LANGUAGE C VOLATILE STRICT;
+
 -- PASSWORD
-CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
-	AS '$libdir/pgcrypto', 'pg_crypt'
-LANGUAGE C IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
-	AS '$libdir/pgcrypto', 'pg_gen_salt'
-LANGUAGE C VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
 	SELECT $1~E'^\\$\\d\\$';
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -769,6 +771,46 @@ CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses t
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text) RETURNS integer AS $$
 	SELECT set_statuses($1,status_id($2),csplit($3));
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION add_statuses (a_obj_id integer,statuses integer[]) RETURNS integer AS $$
+DECLARE
+	s integer;
+	res integer;
+BEGIN
+	FOREACH s IN ARRAY statuses LOOP
+		res := set_status(a_obj_id,statuses[i],now());
+	END LOOP;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+
+----------------------------
+-- ERROR
+----------------------------
+CREATE OR REPLACE FUNCTION error_id (a_name text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION set_error_ref (a_ref text) RETURNS integer AS $$
+	SELECT coalesce(error_id($1),set_ref(NULL,'error,'||$1,NULL,NULL));
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+DECLARE
+	e text;
+	res integer;
+BEGIN
+	IF trim(errors) != '' THEN
+		FOREACH e IN ARRAY csplit(errors) LOOP
+			res := set_status(a_obj_id,set_error_ref(e),now());
+		END LOOP;
+	END IF;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+	DELETE FROM status WHERE object_id=$1 AND type_id IN (
+		SELECT obj_id FROM ref WHERE _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id))
+	);
+	SELECT add_errors($1,$2);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
