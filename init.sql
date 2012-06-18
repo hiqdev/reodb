@@ -1,16 +1,17 @@
 
 -- BASIC CLASSES
-SELECT set_ref('scalar',		'{lang:Scalar}');
-SELECT set_ref('type',			'{lang:Type}');
-SELECT set_ref('tag',			'{lang:Tag}');
-SELECT set_ref('state',			'{lang:State}');
-SELECT set_ref('status',		'{lang:Status}');
-SELECT set_ref('class',			'{lang:Class}');
-SELECT set_ref('class,ref',		'{lang:Reference}');
-SELECT set_ref('class,prop',		'{lang:Property}');
-SELECT set_ref('class,param',		'{lang:Param}');
-SELECT set_ref('class,link',		'{lang:Link}');
-SELECT set_ref('class,blacklist',	'{lang:Blacklist}');
+SELECT set_ref(0,'scalar',		'{lang:Scalar}');
+SELECT set_ref(0,'type',		'{lang:Type}');
+SELECT set_ref(0,'tag',			'{lang:Tag}');
+SELECT set_ref(0,'state',		'{lang:State}');
+SELECT set_ref(0,'status',		'{lang:Status}');
+SELECT set_ref(0,'error',		'{lang:Error}');
+SELECT set_ref(0,'class',		'{lang:Class}');
+SELECT set_ref(0,'class,ref',		'{lang:Reference}');
+SELECT set_ref(0,'class,prop',		'{lang:Property}');
+SELECT set_ref(0,'class,param',		'{lang:Param}');
+SELECT set_ref(0,'class,link',		'{lang:Link}');
+SELECT set_ref(0,'class,blacklist',	'{lang:Blacklist}');
 
 -- SCALARS
 SELECT set_ref('scalar,integer',	'{lang:integer}');
