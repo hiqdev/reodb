@@ -57,12 +57,12 @@ CREATE OR REPLACE VIEW paramz AS
 
 -- STATUS
 CREATE OR REPLACE VIEW statusz AS
-	SELECT		s.*,coalesce(z.name||',','')||y.name||','||x.name||','||t.name AS type
+	SELECT		s.*,coalesce(z.name||',','')||coalesce(y.name||',','')||x.name||','||t.name AS type
 	FROM		status		s
 	JOIN		ref		t ON t.obj_id=s.type_id
 	JOIN		ref		x ON x.obj_id=t._id
-	LEFT JOIN	ref		y ON y.obj_id=x._id
-	LEFT JOIN	ref		z ON z.obj_id=y._id AND z._id!=0
+	LEFT JOIN	ref		y ON y.obj_id=x._id AND y.obj_id!=0
+	LEFT JOIN	ref		z ON z.obj_id=y._id AND z.obj_id!=0
 ;
 CREATE OR REPLACE VIEW status_h AS
 	SELECT		s.*,coalesce(o.name||',','')||coalesce(p.name||',','')||coalesce(q.name||',','')||r.name||','||t.name AS type
