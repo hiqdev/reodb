@@ -64,6 +64,18 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
+-- CJOIN
+CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
+	SELECT array_to_string($1,',');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION cjoin (a_strs text[],a_delimiter text) RETURNS text AS $$
+	SELECT array_to_string($1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+-- LANG
+CREATE OR REPLACE FUNCTION unlang (a_str text) RETURNS text AS $$
+	SELECT substr($1,7,abs(length($1)-7));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- DIFF
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
@@ -164,6 +176,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 
+-- CHECK EMAIL
+CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
+	SELECT $1~*'^[a-z0-9_.+-]+@[a-z0-9.-]+$';
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+
+-- CHECK IP
+CREATE OR REPLACE FUNCTION is_ip_allowed (a_ip inet,a_nets text) RETURNS boolean AS $$
+	SELECT max((str2inet(net)>>=$1)::integer)::boolean
+	FROM (SELECT unnest(csplit($2)) AS net) AS foo;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+
 -- SPLIT
 CREATE OR REPLACE FUNCTION split (a text,sym text) RETURNS text[] AS $$
 DECLARE
@@ -208,13 +231,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
+-- OBSOLETE AS OF 9.1
+--	CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
+--		AS '$libdir/pgcrypto', 'pg_crypt'
+--	LANGUAGE C IMMUTABLE STRICT;
+--	CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
+--		AS '$libdir/pgcrypto', 'pg_gen_salt'
+--	LANGUAGE C VOLATILE STRICT;
+
 -- PASSWORD
-CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
-	AS '$libdir/pgcrypto', 'pg_crypt'
-LANGUAGE C IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
-	AS '$libdir/pgcrypto', 'pg_gen_salt'
-LANGUAGE C VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
 	SELECT $1~E'^\\$\\d\\$';
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -270,9 +295,15 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 -- DATE/TIME OPERATIONS
 ----------------------------
-CREATE OR REPLACE FUNCTION extend_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
-	SELECT $1+'1year'::interval*$2;
-$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION increase_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+	SELECT $1+'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION decrease_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+	SELECT $1-'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION decrease_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
+	SELECT $1-'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
@@ -414,8 +445,8 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 -- TO/FROM CENTS
 ----------------------------
 CREATE OR REPLACE FUNCTION from_cents (a_cents double precision) RETURNS numeric AS $$
-	SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc(($1/100)::numeric,2) END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
+	SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc((coalesce($1,0)/100)::numeric,2) END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
 	SELECT trunc($1 * 100)::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -431,6 +462,12 @@ CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 't' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_t (text) RETURNS text AS $$
+	SELECT CASE WHEN $1!='' THEN 't' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_t (numeric) RETURNS text AS $$
+	SELECT CASE WHEN $1!=0 THEN 't' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_yes (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 'yes' END;
@@ -539,6 +576,19 @@ BEGIN
 	END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION simple_sub_ref_id (a_name text,a_id integer) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE $2 IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION sub_ref_id (a_name text,a_id integer) RETURNS integer AS $$
+DECLARE
+	pos integer := strpos(a_name,',');
+BEGIN
+	RETURN CASE WHEN pos=0
+		THEN simple_sub_ref_id(a_name,a_id)
+		ELSE sub_ref_id(substr(a_name,pos+1),simple_sub_ref_id(substr(a_name,0,pos),a_id))
+	END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (text) RETURNS integer AS $$
 	SELECT ref_id($1,0);
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -566,12 +616,15 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
+	SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT CASE WHEN _id=0 THEN name ELSE ref_full_name(_id)||','||name END
 	FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_full_name (a_parent_id integer,a_obj_id integer) RETURNS text AS $$
-	SELECT CASE WHEN _id=0 OR _id=$2 THEN name ELSE ref_full_name(_id)||','||name END
+	SELECT CASE WHEN _id=0 OR _id=$2 THEN name ELSE ref_full_name(_id,$2)||','||name END
 	FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text,a_descr text) RETURNS integer AS $$
@@ -760,8 +813,51 @@ BEGIN
 	RETURN a_obj_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text[]) RETURNS integer AS $$
+	SELECT set_statuses($1,status_id($2),$3);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text) RETURNS integer AS $$
 	SELECT set_statuses($1,status_id($2),csplit($3));
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION add_statuses (a_obj_id integer,statuses integer[]) RETURNS integer AS $$
+DECLARE
+	s integer;
+	res integer;
+BEGIN
+	FOREACH s IN ARRAY statuses LOOP
+		res := set_status(a_obj_id,statuses[i],now());
+	END LOOP;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+
+----------------------------
+-- ERROR
+----------------------------
+CREATE OR REPLACE FUNCTION error_id (a_name text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION set_error_ref (a_ref text) RETURNS integer AS $$
+	SELECT coalesce(error_id($1),set_ref(NULL,'error,'||$1,NULL,NULL));
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+DECLARE
+	e text;
+	res integer;
+BEGIN
+	IF trim(errors) != '' THEN
+		FOREACH e IN ARRAY csplit(errors) LOOP
+			res := set_status(a_obj_id,set_error_ref(e),now());
+		END LOOP;
+	END IF;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+	DELETE FROM status WHERE object_id=$1 AND type_id IN (
+		SELECT obj_id FROM ref WHERE _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id))
+	);
+	SELECT add_errors($1,$2);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
@@ -1206,13 +1302,16 @@ BEGIN
 	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_param (a_obj_id integer,a_name text,a_value integer) RETURNS integer AS $$
+	SELECT set_param($1,$2,$3::text);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TAG
 ----------------------------
 CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('tag'));
-$$ LANGUAGE sql STABLE STRICT;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS integer AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;

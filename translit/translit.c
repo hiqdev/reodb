@@ -63,7 +63,7 @@ Datum translit (PG_FUNCTION_ARGS) {
 /*
 
 CREATE OR REPLACE FUNCTION translit (text) RETURNS text
-	AS '/home/sol/prj/revo/src/sql/translit/translit','translit'
+	AS '/home/sol/prj/mrdp/sql/reodb/translit/translit','translit'
 LANGUAGE C STRICT IMMUTABLE;
 
 */
