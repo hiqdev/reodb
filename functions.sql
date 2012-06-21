@@ -33,6 +33,38 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean,old boolean) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value integer,old integer) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value double precision,old double precision) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value text,old text) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value timestamp,old timestamp) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value inet,old inet) AS $$
+	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
+		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+
 -- DIFF
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
 	SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
