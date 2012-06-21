@@ -545,6 +545,19 @@ BEGIN
 	END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION simple_sub_ref_id (a_name text,a_id integer) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE $2 IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION sub_ref_id (a_name text,a_id integer) RETURNS integer AS $$
+DECLARE
+	pos integer := strpos(a_name,',');
+BEGIN
+	RETURN CASE WHEN pos=0
+		THEN simple_sub_ref_id(a_name,a_id)
+		ELSE sub_ref_id(substr(a_name,pos+1),simple_sub_ref_id(substr(a_name,0,pos),a_id))
+	END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (text) RETURNS integer AS $$
 	SELECT ref_id($1,0);
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -571,6 +584,9 @@ CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
+	SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT CASE WHEN _id=0 THEN name ELSE ref_full_name(_id)||','||name END
