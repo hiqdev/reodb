@@ -181,12 +181,6 @@ CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
 	SELECT $1~*'^[a-z0-9_.+-]+@[a-z0-9.-]+$';
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
--- CHECK IP
-CREATE OR REPLACE FUNCTION is_ip_allowed (a_ip inet,a_nets text) RETURNS boolean AS $$
-	SELECT max((str2inet(net)>>=$1)::integer)::boolean
-	FROM (SELECT unnest(csplit($2)) AS net) AS foo;
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-
 -- SPLIT
 CREATE OR REPLACE FUNCTION split (a text,sym text) RETURNS text[] AS $$
 DECLARE
@@ -217,6 +211,12 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION csplit (a text) RETURNS text[] AS $$
 	SELECT split($1,',');
 $$ LANGUAGE sql IMMUTABLE STRICT;
+
+-- CHECK IP
+CREATE OR REPLACE FUNCTION is_ip_allowed (a_ip inet,a_nets text) RETURNS boolean AS $$
+	SELECT max((str2inet(net)>>=$1)::integer)::boolean
+	FROM (SELECT unnest(csplit($2)) AS net) AS foo;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 -- UNNEST
 CREATE OR REPLACE FUNCTION unnest (a text[]) RETURNS SETOF text AS $$
@@ -1346,6 +1346,14 @@ BEGIN
 	IF pos>0 THEN
 		EXECUTE 'SELECT '||substr(a_object,0,pos)||'_id('''||substr(a_object,pos+1)||''')' INTO res;
 	END IF;
+	RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION obj_id(a_class text, a_name text) RETURNS integer AS $$
+DECLARE
+	res	integer;
+BEGIN
+	EXECUTE 'SELECT '||a_class||'_id('''||a_name||''')' INTO res;
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
