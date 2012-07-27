@@ -1,0 +1,5 @@
+#!/bin/sh
+
+psql $1 -f pgsdump.sql > $1.pgsd
+psql $2 -f pgsdump.sql > $2.pgsd
+diff $1.pgsd $2.pgsd
