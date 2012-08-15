@@ -123,6 +123,19 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION str2int (a text,def integer) RETURNS integer AS $$
+DECLARE
+	r integer;
+BEGIN
+	BEGIN
+		SELECT INTO r a::integer;
+	EXCEPTION
+		WHEN OTHERS THEN
+			-- do nothing
+	END;
+	RETURN coalesce(r,def);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
 DECLARE
 	r numeric;
@@ -295,13 +308,13 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 -- DATE/TIME OPERATIONS
 ----------------------------
-CREATE OR REPLACE FUNCTION increase_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
 	SELECT $1+'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION decrease_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
 	SELECT $1-'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION decrease_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
 	SELECT $1-'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
@@ -1471,4 +1484,11 @@ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 -- LOG_VAR
 ----------------------------
+
+----------------------------
+-- PG
+----------------------------
+CREATE OR REPLACE FUNCTION pg_typename (a_oid integer) RETURNS name AS $$
+	SELECT typname FROM pg_type WHERE oid=$1;
+$$ LANGUAGE sql STABLE STRICT;
 
