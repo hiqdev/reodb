@@ -268,13 +268,6 @@ $$ LANGUAGE sql VOLATILE STRICT;
 --LANGUAGE c IMMUTABLE STRICT;
 
 ----------------------------
--- TO BOOL
-----------------------------
-CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN 'TRUE' ELSE 'FALSE' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
-----------------------------
 -- TO DATE/TIME
 ----------------------------
 CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
@@ -465,13 +458,10 @@ CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
--- TO SIGN
+-- TO BOOL
 ----------------------------
-CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
-	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
+CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN 'TRUE' ELSE 'FALSE' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 't' END;
@@ -490,6 +480,16 @@ CREATE OR REPLACE FUNCTION to_no (boolean) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_yesno (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN '{lang:Yes}' ELSE '{lang:No}' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO SIGN
+----------------------------
+CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
+	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -742,8 +742,20 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type_id integer) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=$2;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type text,a_period interval) RETURNS boolean AS $$
+	SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type_id integer,a_period interval) RETURNS boolean AS $$
+	SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=$2 AND time>now()-$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type_id integer,a_period interval) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=$2 AND time>now()-$3;
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type text,a_period interval) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3;
@@ -853,25 +865,25 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_error_ref (a_ref text) RETURNS integer AS $$
 	SELECT coalesce(error_id($1),set_ref(NULL,'error,'||$1,NULL,NULL));
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text[]) RETURNS integer AS $$
 DECLARE
 	e text;
 	res integer;
 BEGIN
-	IF trim(errors) != '' THEN
-		FOREACH e IN ARRAY csplit(errors) LOOP
+	IF errors != '{}' THEN
+		FOREACH e IN ARRAY errors LOOP
 			res := set_status(a_obj_id,set_error_ref(e),now());
 		END LOOP;
 	END IF;
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text[]) RETURNS integer AS $$
 	DELETE FROM status WHERE object_id=$1 AND type_id IN (
 		SELECT obj_id FROM ref WHERE _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id))
 	);
 	SELECT add_errors($1,$2);
-$$ LANGUAGE sql VOLATILE STRICT;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- PROP
@@ -1362,7 +1374,7 @@ BEGIN
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id(a_class text, a_name text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION obj_id (a_class text, a_name text) RETURNS integer AS $$
 DECLARE
 	res	integer;
 BEGIN
