@@ -73,6 +73,13 @@ CREATE OR REPLACE VIEW status_h AS
 	LEFT JOIN	ref		p ON p.obj_id=q._id AND p.obj_id!=0
 	LEFT JOIN	ref		o ON o.obj_id=p._id AND o.obj_id!=0
 ;
+CREATE OR REPLACE VIEW errors AS
+	SELECT		s.object_id,cjoin(r.name) AS errors
+	FROM		status		s
+	JOIN		ref		r ON r.obj_id=s.type_id
+	JOIN		ref		u ON u.obj_id=r._id AND ref_id('error') IN (u.obj_id,u._id)
+	GROUP BY	s.object_id
+;
 
 -- BLACKLIST
 CREATE OR REPLACE VIEW blacklist_h AS
