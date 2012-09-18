@@ -9,7 +9,6 @@ ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_id_pkey		PRIMARY KEY (id);
 ALTER TABLE ONLY tag		ADD CONSTRAINT tag_id_pkey			PRIMARY KEY (id);
 ALTER TABLE ONLY link		ADD CONSTRAINT link_obj_id_pkey			PRIMARY KEY (obj_id);
 ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_pkey		PRIMARY KEY (obj_id);
-ALTER TABLE ONLY log		ADD CONSTRAINT log_id_pkey			PRIMARY KEY (id);
 
 -- OBJ
 ALTER TABLE ONLY obj		ADD CONSTRAINT obj_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
@@ -111,8 +110,4 @@ ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_user_id		FOREIGN KEY (user_i
 										ON UPDATE CASCADE ON DELETE CASCADE;
 CREATE INDEX			blacklist_class_id_idx				ON blacklist (class_id);
 CREATE INDEX			blacklist_user_id				ON blacklist (user_id);
-
--- WRONG LOGIN
--- LOG
--- LOG VAR
 
