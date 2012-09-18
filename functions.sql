@@ -304,11 +304,17 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
 	SELECT $1+'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
+	SELECT $1+'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
 	SELECT $1-'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
 	SELECT $1-'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION age_since_new_year (a_date timestamp) RETURNS interval AS $$
+	SELECT age($1,date_trunc('year',$1));
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
@@ -578,6 +584,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 ----------------------------
 CREATE OR REPLACE FUNCTION top_ref_id (a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$1 AND _id=0;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION top_ref_id (a_one text,a_two text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$2 AND _id=top_ref_id($1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (a_ref text,a_id integer) RETURNS integer AS $$
 DECLARE
