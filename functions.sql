@@ -1048,6 +1048,19 @@ CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id integer,a_prop_id in
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
+-- GET PROP VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class_id integer) RETURNS TABLE(name text, value text) AS $$
+	SELECT		p.name,coalesce(v.value,p.def) as value 
+	FROM		prop p 
+	LEFT JOIN	value v		ON v.prop_id=p.obj_id AND v.obj_id=$1 
+	WHERE		p.class_id=$2;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class text) RETURNS TABLE(name text, value text) AS $$
+	SELECT *  FROM get_props_values($1, class_id($2));
+$$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
 -- SET VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS integer AS $$
