@@ -69,19 +69,35 @@ CREATE AGGREGATE sw1max (timestamp_double) (
         FINALFUNC = sw1max_final
 );
 
--- LATEST
-
-CREATE OR REPLACE FUNCTION latest_state (state timestamp_double,t timestamp,d double precision) RETURNS timestamp_double AS $$
+-- LAST timestamp,double
+CREATE OR REPLACE FUNCTION last_state (state timestamp_double,t timestamp,d double precision) RETURNS timestamp_double AS $$
         SELECT CASE WHEN $1 IS NULL OR $2>$1.t THEN ($2,$3)::timestamp_double ELSE $1 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION latest_final (state timestamp_double) RETURNS double precision AS $$
+CREATE OR REPLACE FUNCTION last_final (state timestamp_double) RETURNS double precision AS $$
 	SELECT $1.d;
 $$ LANGUAGE sql STABLE STRICT;
 
-CREATE AGGREGATE latest (timestamp,double precision) (
+CREATE AGGREGATE last (timestamp,double precision) (
         STYPE = timestamp_double,
-        SFUNC = latest_state,
-        FINALFUNC = latest_final
+        SFUNC = last_state,
+        FINALFUNC = last_final
+);
+
+-- LAST integer,integer
+CREATE TYPE integer_integer AS (k integer,v integer);
+
+CREATE OR REPLACE FUNCTION last_state (state integer_integer,k integer,v integer) RETURNS integer_integer AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::integer_integer ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION last_final (state integer_integer) RETURNS integer AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+
+CREATE AGGREGATE last (integer,integer) (
+        STYPE = integer_integer,
+        SFUNC = last_state,
+        FINALFUNC = last_final
 );
 
