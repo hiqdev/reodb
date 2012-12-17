@@ -301,6 +301,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 -- DATE/TIME OPERATIONS
 ----------------------------
+CREATE OR REPLACE FUNCTION abs (diff interval) RETURNS interval AS $$
+	SELECT CASE WHEN $1<'0sec'::interval THEN -$1 ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
 	SELECT $1+'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
@@ -315,6 +318,14 @@ CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years double precision)
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION age_since_new_year (a_date timestamp) RETURNS interval AS $$
 	SELECT age($1,date_trunc('year',$1));
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION short_interval (a_interval interval) RETURNS text AS $$
+	SELECT CASE
+		WHEN $1>'1year'	THEN date_part('month',$1)||' monthes'
+		WHEN $1>'1day'	THEN date_part('day',$1)||' days'
+		WHEN $1>'1hour'	THEN date_part('hour',$1)||' hours'
+				ELSE date_part('minute',$1)||' minutes'
+	END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
@@ -368,11 +379,23 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION to_month (timestamp with time zone) RETURNS timestamp AS $$
 	SELECT date_trunc('month',coalesce($1,now())::timestamp);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION this_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION this_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
 	SELECT date_trunc('month',now()::timestamp-'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
+	SELECT date_trunc('month',coalesce($1,now())::timestamp+'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION next_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp+'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION next_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp+'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_year () RETURNS timestamp AS $$
 	SELECT date_trunc('year',now()::timestamp);
@@ -893,6 +916,20 @@ CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text[]) RETURNS i
 	);
 	SELECT add_errors($1,$2);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+
+----------------------------
+-- PAGE
+----------------------------
+CREATE OR REPLACE FUNCTION ref_page_id (a_page text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION set_ref_page_id (a_page text) RETURNS integer AS $$
+DECLARE
+BEGIN
+	FOREACH p IN ARRAY csplit(a_page) LOOP
+	END LOOP;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 ----------------------------
 -- PROP
