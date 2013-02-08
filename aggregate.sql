@@ -101,3 +101,34 @@ CREATE AGGREGATE last (integer,integer) (
         FINALFUNC = last_final
 );
 
+-- FIRST/LAST timestamp,integer
+CREATE TYPE timestamp_integer AS (k timestamp,v integer);
+
+CREATE OR REPLACE FUNCTION first_state (state timestamp_integer,k timestamp,v integer) RETURNS timestamp_integer AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::timestamp_integer ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION first_final (state timestamp_integer) RETURNS integer AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+
+CREATE AGGREGATE first (timestamp,integer) (
+        STYPE = timestamp_integer,
+        SFUNC = first_state,
+        FINALFUNC = first_final
+);
+
+CREATE OR REPLACE FUNCTION last_state (state timestamp_integer,k timestamp,v integer) RETURNS timestamp_integer AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::timestamp_integer ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION last_final (state timestamp_integer) RETURNS integer AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+
+CREATE AGGREGATE last (timestamp,integer) (
+        STYPE = timestamp_integer,
+        SFUNC = last_state,
+        FINALFUNC = last_final
+);
+
