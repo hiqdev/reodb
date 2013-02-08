@@ -661,6 +661,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_in (a_obj_id integer,a_names text) RETURNS boolean AS $$
+	SELECT name = ANY(csplit($2)) FROM ref WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
@@ -758,6 +761,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS TABLE (obj_id integer) AS $$
+	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
 $$ LANGUAGE sql STABLE STRICT;
@@ -796,10 +802,12 @@ CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_t
 DECLARE
 	the_id		integer;
 	the_time	timestamp;
+	b_time		timestamp := coalesce(a_time,now());
 BEGIN
 	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
 	IF the_id IS NULL THEN
-		INSERT INTO status (object_id,subject_id,type_id) VALUES (a_obj_id,a_subject_id,a_type_id) RETURNING id INTO the_id;
+		INSERT INTO status (object_id,subject_id,type_id,time)
+		VALUES (a_obj_id,a_subject_id,a_type_id,b_time) RETURNING id INTO the_id;
 	ELSIF the_time!=a_time THEN
 		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=a_time WHERE id=the_id;
 	END IF;
