@@ -655,6 +655,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer) RETURNS SETOF integer AS $$
+	SELECT obj_id FROM ref WHERE _id=$1;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text) RETURNS SETOF integer AS $$
+	SELECT obj_id FROM ref WHERE _id=ref_id($1);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4);
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -1114,6 +1120,19 @@ CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id integer,a_prop_id in
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
+-- GET PROP VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class_id integer) RETURNS TABLE(name text, value text) AS $$
+	SELECT		p.name,coalesce(v.value,p.def) as value 
+	FROM		prop p 
+	LEFT JOIN	value v		ON v.prop_id=p.obj_id AND v.obj_id=$1 
+	WHERE		p.class_id=$2;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class text) RETURNS TABLE(name text, value text) AS $$
+	SELECT *  FROM get_props_values($1, class_id($2));
+$$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
 -- SET VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS integer AS $$
@@ -1402,6 +1421,16 @@ CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS i
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag text) RETURNS integer AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,tag_id($2)) RETURNING id;
+$$ LANGUAGE sql VOLATILE STRICT;
+
+----------------------------
+-- TAG2
+----------------------------
+CREATE OR REPLACE FUNCTION set_tag2 (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
+	INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES ($1,$2,$3) RETURNING id;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_tag2 (a_src_id integer,a_dst_id integer,a_tag text) RETURNS integer AS $$
+	INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES ($1,$2,tag_id($3)) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
