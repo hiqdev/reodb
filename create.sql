@@ -46,6 +46,15 @@ CREATE TABLE value (
 );
 SELECT * INTO del_value FROM value LIMIT 0;
 
+CREATE TABLE integer_value (
+	id		integer		NOT NULL DEFAULT nextval('value_id_seq'),
+	obj_id		integer		NOT NULL,
+	prop_id		integer		NOT NULL,
+	no		integer		NOT NULL DEFAULT 0,
+	value		integer		NULL
+);
+SELECT * INTO del_integer_value FROM value LIMIT 0;
+
 CREATE TABLE old_value (
 	obj_id		integer		NULL,
 	prop_id		integer		NULL,
