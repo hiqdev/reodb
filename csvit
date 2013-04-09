@@ -1,4 +1,4 @@
 #!/bin/sh
 # CSV It
 
-psql -d mrdp -q -A -t -F ',' -f $1
+psql -d $1 -q -A -t -F ',' -f $2
