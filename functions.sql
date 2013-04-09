@@ -136,6 +136,9 @@ BEGIN
 	RETURN coalesce(r,def);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION str2int (a text) RETURNS integer AS $$
+	SELECT str2int($1,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
 DECLARE
 	r numeric;
@@ -663,7 +666,7 @@ CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_in (a_obj_id integer,a_names text) RETURNS boolean AS $$
 	SELECT name = ANY(csplit($2)) FROM ref WHERE obj_id=$1;
-$$ LANGUAGE sql STABLE STRICT;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
@@ -760,6 +763,9 @@ CREATE OR REPLACE FUNCTION state_id (a_name text) RETURNS integer AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text[]) RETURNS TABLE (obj_id integer) AS $$
+	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS TABLE (obj_id integer) AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
