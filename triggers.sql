@@ -23,6 +23,22 @@ BEGIN
 	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION odb_mark_deleted_trigger () RETURNS "trigger" AS $$
+DECLARE
+	ds_id integer := state_id(TG_RELNAME,'deleted');
+BEGIN
+	IF OLD.state_id != ds_id THEN
+		EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id='||ds_id||' WHERE obj_id='||OLD.obj_id;
+	END IF;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION odb_forbid_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+	RAISE EXCEPTION 'It is forbidden to delete %',TG_RELNAME;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION odb_before_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
 	EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
