@@ -77,6 +77,18 @@ CREATE OR REPLACE FUNCTION unlang (a_str text) RETURNS text AS $$
 	SELECT substr($1,7,abs(length($1)-7));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
+-- EXECUTE
+CREATE OR REPLACE FUNCTION safe_execute (a_query text) RETURNS text AS $$
+BEGIN
+	BEGIN
+		EXECUTE a_query;
+	EXCEPTION WHEN OTHERS THEN
+		RETURN SQLERRM;
+	END;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+
 -- DIFF
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
 	SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
@@ -187,7 +199,26 @@ BEGIN
 	END;
 	RETURN t;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION smart_str2num (aa text) RETURNS numeric AS $$
+	SELECT str2num(replace($1,',','.'));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION smart_str2time (aa text) RETURNS timestamp AS $$
+DECLARE
+	bb text := trim(aa);
+	lc text := lower(bb);
+	rr text;
+BEGIN
+	IF lc='this' OR lc='thismonth' THEN
+		RETURN to_month();
+	END IF;
+	IF lc='prev' OR lc='prevmonth' OR lc='previousmonth' THEN
+		RETURN prev_month();
+	END IF;
+	rr := regexp_replace(bb,'^(\d{1,2})\.(\d{1,2})\.(\d{4})',E'\\3-\\2-\\1');
+	RETURN str2time(rr);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 -- CHECK EMAIL
 CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
@@ -1134,6 +1165,37 @@ END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 ----------------------------
+-- SET INTEGER VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION set_integer_value (a_obj_id integer,a_prop_id integer,a_value integer) RETURNS integer AS $$
+DECLARE
+	the_id	integer;
+	the_def	integer;
+BEGIN
+	IF a_value IS NULL THEN
+		DELETE FROM integer_value WHERE obj_id=a_obj_id AND prop_id=a_prop_id;
+	ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) AND EXISTS (SELECT 1 FROM prop WHERE obj_id=a_prop_id) THEN
+		SELECT INTO the_id id FROM integer_value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
+		SELECT INTO the_def str2int(def) FROM prop WHERE obj_id=a_prop_id;
+		IF the_def=a_value THEN
+			IF the_id IS NOT NULL THEN
+				DELETE FROM integer_value WHERE id=the_id;
+			END IF;
+		ELSIF the_id IS NOT NULL THEN
+			UPDATE integer_value SET value=a_value WHERE id=the_id;
+		ELSE
+			INSERT INTO integer_value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
+			RETURNING id INTO the_id;
+		END IF;
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_integer_value (a_obj_id integer,a_prop text,a_value integer) RETURNS integer AS $$
+	SELECT set_integer_value($1,prop_id($2),$3);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+
+----------------------------
 -- DELETE VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION delete_value (a_obj_id integer,a_prop_id integer) RETURNS void AS $$
@@ -1347,6 +1409,20 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_tag2 (a_src_id integer,a_dst_id integer,a_tag text) RETURNS integer AS $$
 	INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES ($1,$2,tag_id($3)) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_uniq_tag2 (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
+DECLARE
+	the_id integer;
+BEGIN
+	SELECT INTO the_id id FROM tag2 WHERE src_id=a_src_id AND tag_id=a_tag_id;
+	IF the_id IS NOT NULL THEN
+		UPDATE tag2 SET dst_id=a_dst_id WHERE id=the_id;
+	ELSE
+		INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES (a_src_id,a_dst_id,a_tag_id)
+		RETURNING id INTO the_id;
+	END IF;
+	RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 ----------------------------
 -- OBJECT
