@@ -148,6 +148,9 @@ BEGIN
 	RETURN coalesce(r,def);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION str2int (a text) RETURNS integer AS $$
+	SELECT str2int($1,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
 DECLARE
 	r numeric;
@@ -299,13 +302,6 @@ $$ LANGUAGE sql VOLATILE STRICT;
 --LANGUAGE c IMMUTABLE STRICT;
 
 ----------------------------
--- TO BOOL
-----------------------------
-CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN 'TRUE' ELSE 'FALSE' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
-----------------------------
 -- TO DATE/TIME
 ----------------------------
 CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
@@ -339,7 +335,13 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 -- DATE/TIME OPERATIONS
 ----------------------------
+CREATE OR REPLACE FUNCTION abs (diff interval) RETURNS interval AS $$
+	SELECT CASE WHEN $1<'0sec'::interval THEN -$1 ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
+	SELECT $1+'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION inc_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
 	SELECT $1+'1year'::interval*coalesce($2,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years integer) RETURNS timestamp AS $$
@@ -347,6 +349,17 @@ CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years integer) RETURNS 
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dec_years (a_date timestamp,a_years double precision) RETURNS timestamp AS $$
 	SELECT $1-'1year'::interval*coalesce($2,0);
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION age_since_new_year (a_date timestamp) RETURNS interval AS $$
+	SELECT age($1,date_trunc('year',$1));
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION short_interval (a_interval interval) RETURNS text AS $$
+	SELECT CASE
+		WHEN $1>'1year'	THEN date_part('month',$1)||' monthes'
+		WHEN $1>'1day'	THEN date_part('day',$1)||' days'
+		WHEN $1>'1hour'	THEN date_part('hour',$1)||' hours'
+				ELSE date_part('minute',$1)||' minutes'
+	END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
@@ -400,11 +413,23 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION to_month (timestamp with time zone) RETURNS timestamp AS $$
 	SELECT date_trunc('month',coalesce($1,now())::timestamp);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION this_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION this_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
 	SELECT date_trunc('month',now()::timestamp-'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
-	SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
+	SELECT date_trunc('month',coalesce($1,now())::timestamp+'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION next_month () RETURNS timestamp AS $$
+	SELECT date_trunc('month',now()::timestamp+'1month'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION next_month (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('month',coalesce($1,now())::timestamp+'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_year () RETURNS timestamp AS $$
 	SELECT date_trunc('year',now()::timestamp);
@@ -496,13 +521,10 @@ CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
--- TO SIGN
+-- TO BOOL
 ----------------------------
-CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
-	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
-	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
+CREATE OR REPLACE FUNCTION to_bool (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN 'TRUE' ELSE 'FALSE' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_t (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN 't' END;
@@ -521,6 +543,16 @@ CREATE OR REPLACE FUNCTION to_no (boolean) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_yesno (boolean) RETURNS text AS $$
 	SELECT CASE WHEN $1 THEN '{lang:Yes}' ELSE '{lang:No}' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
+-- TO SIGN
+----------------------------
+CREATE OR REPLACE FUNCTION to_sign (boolean) RETURNS text AS $$
+	SELECT CASE WHEN $1 THEN '+' ELSE '-' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
+	SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -610,6 +642,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION top_ref_id (a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$1 AND _id=0;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION top_ref_id (a_one text,a_two text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$2 AND _id=top_ref_id($1);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (a_ref text,a_id integer) RETURNS integer AS $$
 DECLARE
 	pos integer := strpos(a_ref,',');
@@ -666,6 +701,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_in (a_obj_id integer,a_names text) RETURNS boolean AS $$
+	SELECT name = ANY(csplit($2)) FROM ref WHERE obj_id=$1;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
@@ -763,6 +801,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text[]) RETURNS TABLE (obj_id integer) AS $$
+	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS TABLE (obj_id integer) AS $$
+	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
 $$ LANGUAGE sql STABLE STRICT;
@@ -779,8 +823,20 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('status'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type_id integer) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=$2;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type text,a_period interval) RETURNS boolean AS $$
+	SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type_id integer,a_period interval) RETURNS boolean AS $$
+	SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=$2 AND time>now()-$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type_id integer,a_period interval) RETURNS timestamp AS $$
+	SELECT time FROM status WHERE object_id=$1 AND type_id=$2 AND time>now()-$3;
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type text,a_period interval) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3;
@@ -789,10 +845,12 @@ CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_t
 DECLARE
 	the_id		integer;
 	the_time	timestamp;
+	b_time		timestamp := coalesce(a_time,now());
 BEGIN
 	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
 	IF the_id IS NULL THEN
-		INSERT INTO status (object_id,subject_id,type_id) VALUES (a_obj_id,a_subject_id,a_type_id) RETURNING id INTO the_id;
+		INSERT INTO status (object_id,subject_id,type_id,time)
+		VALUES (a_obj_id,a_subject_id,a_type_id,b_time) RETURNING id INTO the_id;
 	ELSIF the_time!=a_time THEN
 		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=a_time WHERE id=the_id;
 	END IF;
@@ -890,25 +948,39 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_error_ref (a_ref text) RETURNS integer AS $$
 	SELECT coalesce(error_id($1),set_ref(NULL,'error,'||$1,NULL,NULL));
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION add_errors (a_obj_id integer,errors text[]) RETURNS integer AS $$
 DECLARE
 	e text;
 	res integer;
 BEGIN
-	IF trim(errors) != '' THEN
-		FOREACH e IN ARRAY csplit(errors) LOOP
+	IF errors != '{}' THEN
+		FOREACH e IN ARRAY errors LOOP
 			res := set_status(a_obj_id,set_error_ref(e),now());
 		END LOOP;
 	END IF;
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text[]) RETURNS integer AS $$
 	DELETE FROM status WHERE object_id=$1 AND type_id IN (
 		SELECT obj_id FROM ref WHERE _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id))
 	);
 	SELECT add_errors($1,$2);
-$$ LANGUAGE sql VOLATILE STRICT;
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+
+----------------------------
+-- PAGE
+----------------------------
+CREATE OR REPLACE FUNCTION ref_page_id (a_page text) RETURNS integer AS $$
+	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION set_ref_page_id (a_page text) RETURNS integer AS $$
+DECLARE
+BEGIN
+	FOREACH p IN ARRAY csplit(a_page) LOOP
+	END LOOP;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 ----------------------------
 -- PROP
@@ -1077,6 +1149,19 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION get_double_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS double precision AS $$
 	SELECT coalesce(get_value_by_no($1,$2,$3)::double precision, 0);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+----------------------------
+-- GET PROP VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class_id integer) RETURNS TABLE(name text, value text) AS $$
+	SELECT		p.name,coalesce(v.value,p.def) as value 
+	FROM		prop p 
+	LEFT JOIN	value v		ON v.prop_id=p.obj_id AND v.obj_id=$1 
+	WHERE		p.class_id=$2;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class text) RETURNS TABLE(name text, value text) AS $$
+	SELECT *  FROM get_props_values($1, class_id($2));
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- SET VALUE
@@ -1454,7 +1539,7 @@ BEGIN
 	RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id(a_class text, a_name text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION obj_id (a_class text, a_name text) RETURNS integer AS $$
 DECLARE
 	res	integer;
 BEGIN

@@ -119,25 +119,3 @@ CREATE TABLE blacklist (
 );
 SELECT * INTO del_blacklist FROM blacklist LIMIT 0;
 
-CREATE TABLE wrong_login (
-	login		text		NOT NULL,
-	ip		inet		NOT NULL,
-	time		timestamp	NOT NULL DEFAULT now()
-);
-
-CREATE SEQUENCE "log_id_seq" START 1000000;
-CREATE TABLE log (
-	id		integer		NOT NULL DEFAULT nextval('log_id_seq'),
-	login		text		NOT NULL,
-	ip		inet		NOT NULL,
-	time		timestamp	NOT NULL,
-	page		text		NOT NULL,
-	was_allowed	boolean		NOT NULL
-);
-
-CREATE TABLE log_var (
-	id		integer		NOT NULL,
-	name		text		NOT NULL,
-	value		text		NOT NULL
-);
-
