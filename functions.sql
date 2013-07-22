@@ -801,11 +801,11 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text[]) RETURNS TABLE (obj_id integer) AS $$
-	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY($2);
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('state',$1) AND name = ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS TABLE (obj_id integer) AS $$
-	SELECT obj_id FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
+CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
