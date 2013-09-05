@@ -573,7 +573,7 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 ----------------------------
 CREATE OR REPLACE FUNCTION obj_class_id (a_obj_id integer) RETURNS integer AS $$
 	SELECT class_id FROM obj WHERE obj_id = $1;
-$$ LANGUAGE sql STABLE STRICT;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_class (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
@@ -1168,20 +1168,23 @@ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value text) RETURNS integer AS $$
 DECLARE
-	the_id	integer;
-	the_def	text;
+	the_id		integer;
+	the_def		text;
+	the_value	text;
 BEGIN
 	IF a_value IS NULL THEN
 		DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id;
 	ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) AND EXISTS (SELECT 1 FROM prop WHERE obj_id=a_prop_id) THEN
-		SELECT INTO the_id id FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
+		SELECT INTO the_id,the_value id,value FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
 		SELECT INTO the_def def FROM prop WHERE obj_id=a_prop_id;
 		IF the_def=a_value THEN
 			IF the_id IS NOT NULL THEN
 				DELETE FROM value WHERE id=the_id;
 			END IF;
 		ELSIF the_id IS NOT NULL THEN
-			UPDATE value SET value=a_value WHERE id=the_id;
+			IF the_value!=a_value THEN
+				UPDATE value SET value=a_value WHERE id=the_id;
+			END IF;
 		ELSE
 			INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
 			RETURNING id INTO the_id;
@@ -1216,20 +1219,23 @@ END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer,a_value text) RETURNS integer AS $$
 DECLARE
-	the_id	integer;
-	the_def	text;
+	the_id		integer;
+	the_def		text;
+	the_value	text;
 BEGIN
 	IF a_value IS NULL THEN
 		DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id AND no=a_no;
 	ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) AND EXISTS (SELECT 1 FROM prop WHERE obj_id=a_prop_id) THEN
-		SELECT INTO the_id id FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id AND no=a_no;
+		SELECT INTO the_id,the_value id,value FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id AND no=a_no;
 		SELECT INTO the_def def FROM prop WHERE obj_id=a_prop_id;
 		IF the_def=a_value THEN
 			IF the_id IS NOT NULL THEN
 				DELETE FROM value WHERE id=the_id;
 			END IF;
 		ELSIF the_id IS NOT NULL THEN
-			UPDATE value SET value=a_value WHERE id=the_id;
+			IF the_value!=a_value THEN
+				UPDATE value SET value=a_value WHERE id=the_id;
+			END IF;
 		ELSE
 			INSERT INTO value (obj_id,prop_id,no,value) VALUES (a_obj_id,a_prop_id,a_no,a_value)
 			RETURNING id INTO the_id;
@@ -1517,7 +1523,7 @@ DECLARE
 	class	text;
 	name	text;
 BEGIN
-	SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name')
+	SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name',r.name)
 	FROM ref r WHERE obj_id = (SELECT class_id FROM obj WHERE obj_id=$1);
 	IF name IS NOT NULL THEN
 		EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||$1 INTO name;
