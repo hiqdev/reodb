@@ -1536,22 +1536,18 @@ CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS integer AS $$
+    SELECT obj_id(split_part($1,':',1),split_part($1,':',2));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION obj_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE
-	pos	integer := strpos(a_object,':');
-	res	integer;
+    res integer;
 BEGIN
-	IF pos>0 THEN
-		EXECUTE 'SELECT '||substr(a_object,0,pos)||'_id('''||substr(a_object,pos+1)||''')' INTO res;
-	END IF;
-	RETURN res;
-END;
-$$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id (a_class text, a_name text) RETURNS integer AS $$
-DECLARE
-	res	integer;
-BEGIN
-	EXECUTE 'SELECT '||a_class||'_id('''||a_name||''')' INTO res;
-	RETURN res;
+    BEGIN
+        EXECUTE 'SELECT '||a_class||'_id('''||a_name||''')' INTO res;
+    EXCEPTION
+        WHEN OTHERS THEN -- DO NOTHING
+    END;
+    RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
