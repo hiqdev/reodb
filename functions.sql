@@ -559,13 +559,14 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 -- COMPARE
 ----------------------------
 CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double precision) RETURNS boolean AS $$
-	SELECT	CASE $1	WHEN 'lt' THEN $2 <  $3
-			WHEN 'le' THEN $2 <= $3
-			WHEN 'gt' THEN $2 >  $3
-			WHEN 'ge' THEN $2 >= $3
-			WHEN 'eq' THEN $2 =  $3
-			          ELSE $2 != $3
-		END;
+    SELECT CASE $1
+        WHEN 'lt' THEN $2 <  $3
+        WHEN 'le' THEN $2 <= $3
+        WHEN 'gt' THEN $2 >  $3
+        WHEN 'ge' THEN $2 >= $3
+        WHEN 'eq' THEN $2 =  $3
+            ELSE $2 != $3
+    END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -1154,9 +1155,9 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 -- GET PROP VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class_id integer) RETURNS TABLE(name text, value text) AS $$
-	SELECT		p.name,coalesce(v.value,p.def) as value 
-	FROM		prop p 
-	LEFT JOIN	value v		ON v.prop_id=p.obj_id AND v.obj_id=$1 
+	SELECT		p.name,coalesce(v.value,p.def) as value
+	FROM		prop p
+	LEFT JOIN	value v		ON v.prop_id=p.obj_id AND v.obj_id=$1
 	WHERE		p.class_id=$2;
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class text) RETURNS TABLE(name text, value text) AS $$
@@ -1577,11 +1578,11 @@ CREATE OR REPLACE FUNCTION blacklist_id (a_class_id integer,a_user_id integer,a_
 	SELECT obj_id FROM blacklist WHERE class_id=$1 AND user_id=$2 AND name=$3;
 $$ LANGUAGE sql STABLE STRICT;
 -- CREATE OR REPLACE FUNCTION in_blacklist (a_name text,a_class_id integer,a_user_id integer) RETURNS boolean AS $$
--- 	SELECT EXISTS (
--- 		SELECT 1 FROM blacklist WHERE $1 LIKE name AND class_id=$2 AND user_id IN (
--- 			SELECT client_resellers($3,for_myself)
--- 		)
--- 	)
+--  SELECT EXISTS (
+--      SELECT 1 FROM blacklist WHERE $1 LIKE name AND class_id=$2 AND user_id IN (
+--          SELECT client_resellers($3,for_myself)
+--      )
+--  )
 -- $$ LANGUAGE sql STABLE STRICT;
 -- CREATE OR REPLACE FUNCTION blacklist_check (a_name text,a_class text,a_user_id integer) RETURNS text AS $$
 --	SELECT CASE WHEN in_blacklist($1,class_id($2),$3) THEN $1 ELSE NULL END
@@ -1616,7 +1617,7 @@ CREATE OR REPLACE FUNCTION set_blacklist (a_class_id integer,a_user_id integer,a
 	SELECT replace_blacklist(blacklist_id($1,$2,$3),$1,$2,$3,$4);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 -- CREATE OR REPLACE FUNCTION set_blacklist (a_class text,a_user text,a_name text,a_label text) RETURNS integer AS $$
--- 	SELECT set_blacklist(class_id($1),client_id($2),$3,$4);
+--  SELECT set_blacklist(class_id($1),client_id($2),$3,$4);
 -- $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
