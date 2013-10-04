@@ -291,11 +291,32 @@ CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
 	SELECT $1~E'^\\$\\d\\$';
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION check_password (a_test text,a_pwd text) RETURNS boolean AS $$
-	SELECT CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
+	SELECT check_onetime_password($1,$2) OR CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
 	SELECT CASE WHEN is_crypted($1) THEN $1 ELSE crypt($1,gen_salt('md5')) END;
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION onetime_hash (a_pwd text,a_now text) RETURNS text AS $$
+    SELECT md5($1||'luamUl5kruj]Twef1Blok7otob'||$2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION onetime_password (a_pwd text,a_now timestamp) RETURNS text AS $$
+DECLARE
+    z_now bigint := to_epoch(a_now);
+BEGIN
+    RETURN z_now||'-'||onetime_hash(a_pwd,z_now::text);
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION onetime_password (a_pwd text) RETURNS text AS $$
+    SELECT onetime_password($1,now()::timestamp);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION check_onetime_password (a_test text,a_pwd text) RETURNS boolean AS $$
+DECLARE
+    a_now numeric := str2num(split_part(a_test,'-',1));
+    z_now bigint  := to_epoch(now());
+BEGIN
+    RETURN z_now>a_now AND z_now<a_now+20 AND split_part(a_test,'-',2)=onetime_hash(a_pwd,a_now::text);
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --	'/www/rcp3/src/sql/last_strpos','last_strpos'
@@ -304,6 +325,12 @@ $$ LANGUAGE sql VOLATILE STRICT;
 ----------------------------
 -- TO DATE/TIME
 ----------------------------
+CREATE OR REPLACE FUNCTION to_epoch (timestamp with time zone) RETURNS bigint AS $$
+    SELECT date_part('epoch',$1)::bigint;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_epoch (timestamp) RETURNS bigint AS $$
+    SELECT date_part('epoch',$1)::bigint;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_datetime_std (timestamp) RETURNS text AS $$
 	SELECT to_char($1,'DD.MM.YYYY HH24:MI:SS');
 $$ LANGUAGE sql IMMUTABLE STRICT;
