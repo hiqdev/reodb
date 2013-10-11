@@ -869,6 +869,7 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type text,a_period interval) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3;
 $$ LANGUAGE sql VOLATILE STRICT;
+-- XXX important: this function DOES change the time of the status if it already exists, for not changing use add_status
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 DECLARE
 	the_id		integer;
@@ -879,8 +880,8 @@ BEGIN
 	IF the_id IS NULL THEN
 		INSERT INTO status (object_id,subject_id,type_id,time)
 		VALUES (a_obj_id,a_subject_id,a_type_id,b_time) RETURNING id INTO the_id;
-	ELSIF the_time!=a_time THEN
-		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=a_time WHERE id=the_id;
+	ELSIF the_time!=b_time THEN
+		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=b_time WHERE id=the_id;
 	END IF;
 	RETURN the_id;
 END;
@@ -897,19 +898,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp with time zone) RETURNS integer AS $$
 	SELECT set_status($1,status_id($2),$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
--- XXX important: this function does NOT change time of the status if it already exists
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text) RETURNS integer AS $$
-DECLARE
-	a_type_id	integer := status_id(a_type);
-	the_id		integer;
-BEGIN
-	SELECT INTO the_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
-	IF the_id IS NULL THEN
-		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO the_id;
-	END IF;
-	RETURN the_id;
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+    SELECT set_status($1,status_id($2),now());
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION reset_status (a_obj_id integer,a_type text) RETURNS integer AS $$
 	SELECT set_status($1,status_id($2),now());
 $$ LANGUAGE sql VOLATILE STRICT;
