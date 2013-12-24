@@ -165,3 +165,30 @@ CREATE AGGREGATE last (timestamp,integer) (
         FINALFUNC = last_final
 );
 
+-- FIRST/LAST timestamp,text
+CREATE TYPE timestamp_text AS (k timestamp,v text);
+
+CREATE OR REPLACE FUNCTION first_state (state timestamp_text,k timestamp,v text) RETURNS timestamp_text AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::timestamp_text ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION first_final (state timestamp_text) RETURNS text AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE first (timestamp,text) (
+        STYPE = timestamp_text,
+        SFUNC = first_state,
+        FINALFUNC = first_final
+);
+
+CREATE OR REPLACE FUNCTION last_state (state timestamp_text,k timestamp,v text) RETURNS timestamp_text AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::timestamp_text ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION last_final (state timestamp_text) RETURNS text AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE last (timestamp,text) (
+        STYPE = timestamp_text,
+        SFUNC = last_state,
+        FINALFUNC = last_final
+);
+
