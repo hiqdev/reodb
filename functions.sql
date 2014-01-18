@@ -464,6 +464,9 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION to_year (timestamp with time zone) RETURNS timestamp AS $$
 	SELECT date_trunc('year',coalesce($1,now())::timestamp);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION next_year () RETURNS timestamp AS $$
+	SELECT date_trunc('year',now()::timestamp+'1year'::interval);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION days_in_month (timestamp with time zone) RETURNS integer AS $$
 	SELECT date_part('day',to_month($1+'1month')-to_month($1))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -667,6 +670,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 ----------------------------
 -- REF
 ----------------------------
+CREATE OR REPLACE FUNCTION ref_parent_id (a_obj_id integer) RETURNS integer AS $$
+	SELECT _id FROM ref WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION top_ref_id (a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$1 AND _id=0;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -838,6 +844,15 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $$
+    SELECT      s.type_id
+    FROM        status      s
+    JOIN        ref     t ON t.obj_id=s.type_id AND s.object_id=$1
+    JOIN        ref     y ON y.obj_id=t._id AND y._id=top_ref_id('state')
+    ORDER BY    s.time DESC
+    LIMIT       1
+    OFFSET      1;
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATUS
@@ -856,6 +871,9 @@ CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type_id integer) RETUR
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS timestamp AS $$
 	SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION is_status (a_obj_id integer,a_type text) RETURNS boolean AS $$
+	SELECT time IS NOT NULL FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type text,a_period interval) RETURNS boolean AS $$
 	SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3);
@@ -1013,7 +1031,8 @@ BEGIN
 	WHERE	name = substr(a_prop,pos+1) AND
 		CASE	WHEN pos=0 THEN TRUE
 			ELSE class_id=class_id(substr(a_prop,0,pos))
-		END;
+		END
+    LIMIT   1;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION prop_id (a_class_id integer,a_name text) RETURNS integer AS $$
