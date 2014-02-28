@@ -259,6 +259,11 @@ CREATE OR REPLACE FUNCTION csplit (a text) RETURNS text[] AS $$
 	SELECT split($1,',');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
+-- SHORTEN
+CREATE OR REPLACE FUNCTION shorten (a text,len integer) RETURNS text AS $$
+    SELECT CASE WHEN length($1)>$2 THEN left($1,$2-3)||'...' ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
 -- CHECK IP
 CREATE OR REPLACE FUNCTION is_ip_allowed (a_ip inet,a_nets text) RETURNS boolean AS $$
 	SELECT max((str2inet(net)>>=$1)::integer)::boolean
@@ -812,6 +817,12 @@ CREATE OR REPLACE FUNCTION type_id (a_parent text,a_ref text) RETURNS integer AS
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('type',$1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('type',$1) AND name = ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('type',$1) AND name = ANY(csplit($2));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3);
@@ -1515,12 +1526,29 @@ $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_param (a_obj_id integer,a_name text,a_value integer) RETURNS integer AS $$
 	SELECT set_param($1,$2,$3::text);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_param (a_obj_id integer,a_name text) RETURNS text AS $$
+	SELECT value FROM value WHERE obj_id=$1 AND prop_id=param_id($2);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_params (a_obj_id integer,a_params hstore) RETURNS text AS $$
+DECLARE
+    a RECORD;
+    res integer;
+BEGIN
+    FOR a IN SELECT * FROM each(a_params) LOOP
+        res := set_param(a_obj_id,a.key,a.value);
+    END LOOP;
+    return res;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TAG
 ----------------------------
 CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
 	SELECT ref_id($1,top_ref_id('tag'));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION class_tag_id (a_class text,a_name text) RETURNS integer AS $$
+    SELECT obj_id FROM ref WHERE name=$2 AND type_id($1) IN (obj_id,_id);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS integer AS $$
 	INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2) RETURNING id;
