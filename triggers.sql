@@ -62,6 +62,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- REODB TRIGGERS
+CREATE OR REPLACE FUNCTION reodb_before_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+    IF ref_name(OLD.state_id)='deleted' THEN
+        EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+        RETURN OLD;
+    END IF;
+    EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id=state_id('''||TG_RELNAME||''',''deleted'') WHERE obj_id='||OLD.obj_id;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $$
+DECLARE
+    tmp text;
+BEGIN
+	EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+	IF TG_OP='UPDATE' THEN
+		RETURN NEW;
+	ELSE
+		RETURN OLD;
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 -- OBJ
 CREATE OR REPLACE FUNCTION update_time_trigger () RETURNS "trigger" AS $$
 BEGIN
