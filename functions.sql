@@ -393,6 +393,18 @@ CREATE OR REPLACE FUNCTION short_interval (a_interval interval) RETURNS text AS 
 				ELSE date_part('minute',$1)||' minutes'
 	END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION monthdiff (a_from timestamp,a_till timestamp) RETURNS double precision AS $$
+    SELECT date_part('year',age($1,$2))*12+date_part('month',age($1,$2))+(CASE WHEN date_part('day',age($1,$2))>27 THEN 1 ELSE 0 END);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION datediff (a_period interval,a_from timestamp,a_till timestamp) RETURNS double precision AS $$
+    SELECT CASE
+        WHEN $1>='1month' THEN monthdiff($2,$3)/(date_part('epoch',$1)/date_part('epoch','1month'::interval))
+        ELSE date_part('epoch',age($2,$3))/date_part('epoch',$1)
+    END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION renew_expires (a_period interval,a_expires timestamp,a_sale_time timestamp,a_amount integer) RETURNS timestamp AS $$
+    SELECT $3+$1*(datediff($1,$2,$3)+$4);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
@@ -1558,23 +1570,23 @@ CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag text) RETURNS integer
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
--- TAG2
+-- TIE
 ----------------------------
-CREATE OR REPLACE FUNCTION set_tag2 (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
-	INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES ($1,$2,$3) RETURNING id;
+CREATE OR REPLACE FUNCTION set_tie (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
+	INSERT INTO tie (src_id,dst_id,tag_id) VALUES ($1,$2,$3) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_tag2 (a_src_id integer,a_dst_id integer,a_tag text) RETURNS integer AS $$
-	INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES ($1,$2,tag_id($3)) RETURNING id;
+CREATE OR REPLACE FUNCTION set_tie (a_src_id integer,a_dst_id integer,a_tag text) RETURNS integer AS $$
+	INSERT INTO tie (src_id,dst_id,tag_id) VALUES ($1,$2,tag_id($3)) RETURNING id;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_uniq_tag2 (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_uniq_tie (a_src_id integer,a_dst_id integer,a_tag_id integer) RETURNS integer AS $$
 DECLARE
 	the_id integer;
 BEGIN
-	SELECT INTO the_id id FROM tag2 WHERE src_id=a_src_id AND tag_id=a_tag_id;
+	SELECT INTO the_id id FROM tie WHERE src_id=a_src_id AND tag_id=a_tag_id;
 	IF the_id IS NOT NULL THEN
-		UPDATE tag2 SET dst_id=a_dst_id WHERE id=the_id;
+		UPDATE tie SET dst_id=a_dst_id WHERE id=the_id;
 	ELSE
-		INSERT INTO tag2 (src_id,dst_id,tag_id) VALUES (a_src_id,a_dst_id,a_tag_id)
+		INSERT INTO tie (src_id,dst_id,tag_id) VALUES (a_src_id,a_dst_id,a_tag_id)
 		RETURNING id INTO the_id;
 	END IF;
 	RETURN the_id;
@@ -1631,6 +1643,19 @@ CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
 		ORDER BY	c.name,p.name,v.no
 	)	AS a
 $$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
+-- PROFILE
+----------------------------
+CREATE OR REPLACE FUNCTION profile_id (a_class text,a_name text) RETURNS integer AS $$
+	SELECT obj_id FROM profile WHERE class_id=class_id($1) AND name=upper($2);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION new_profile (a_class text,a_name text) RETURNS integer AS $$
+	INSERT INTO profile (class_id,name) VALUES (class_id($1),upper($2)) RETURNING obj_id;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_profile (a_class text,a_name text) RETURNS integer AS $$
+	SELECT coalesce(profile_id($1,$2),new_profile($1,$2));
+$$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- BLACKLIST
