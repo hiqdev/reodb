@@ -1,14 +1,14 @@
 -- $Header: /home/sol/usr/cvs/reodb/alter.sql,v 1.2 2007/08/31 11:16:18 sol Exp $
 
 -- PRIMARY KEYS
-ALTER TABLE ONLY obj		ADD CONSTRAINT obj_obj_id_pkey			PRIMARY KEY (obj_id);
-ALTER TABLE ONLY ref		ADD CONSTRAINT ref_obj_id_pkey			PRIMARY KEY (obj_id);
-ALTER TABLE ONLY prop		ADD CONSTRAINT prop_obj_id_pkey			PRIMARY KEY (obj_id);
-ALTER TABLE ONLY value		ADD CONSTRAINT value_id_pkey			PRIMARY KEY (id);
-ALTER TABLE ONLY user_value	ADD CONSTRAINT user_value_id_pkey		PRIMARY KEY (id);
-ALTER TABLE ONLY tag		ADD CONSTRAINT tag_id_pkey			PRIMARY KEY (id);
-ALTER TABLE ONLY link		ADD CONSTRAINT link_obj_id_pkey			PRIMARY KEY (obj_id);
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_pkey		PRIMARY KEY (obj_id);
+ALTER TABLE ONLY obj                ADD CONSTRAINT obj_obj_id_pkey                      PRIMARY KEY (obj_id);
+ALTER TABLE ONLY ref                ADD CONSTRAINT ref_obj_id_pkey                      PRIMARY KEY (obj_id);
+ALTER TABLE ONLY prop               ADD CONSTRAINT prop_obj_id_pkey                     PRIMARY KEY (obj_id);
+ALTER TABLE ONLY value              ADD CONSTRAINT value_id_pkey                        PRIMARY KEY (id);
+ALTER TABLE ONLY user_value         ADD CONSTRAINT user_value_id_pkey                   PRIMARY KEY (id);
+ALTER TABLE ONLY tag                ADD CONSTRAINT tag_id_pkey                          PRIMARY KEY (id);
+ALTER TABLE ONLY link               ADD CONSTRAINT link_obj_id_pkey                     PRIMARY KEY (obj_id);
+ALTER TABLE ONLY blacklisted        ADD CONSTRAINT blacklisted_id_pkey                  PRIMARY KEY (id);
 
 -- OBJ
 ALTER TABLE ONLY obj		ADD CONSTRAINT obj_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
@@ -101,13 +101,11 @@ CREATE INDEX			status_subject_id_idx				ON status (subject_id);
 CREATE INDEX			status_type_id_idx				ON status (type_id);
 CREATE INDEX			status_time_idx					ON status (time);
 
--- BLACKLIST
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
-										ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
-										ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_user_id		FOREIGN KEY (user_id) REFERENCES obj (obj_id)
-										ON UPDATE CASCADE ON DELETE CASCADE;
-CREATE INDEX			blacklist_class_id_idx				ON blacklist (class_id);
-CREATE INDEX			blacklist_user_id				ON blacklist (user_id);
+-- BLACKLISTED
+ALTER TABLE ONLY blacklisted        ADD CONSTRAINT blacklisted_object_id_fkey           FOREIGN KEY (object_id)     REFERENCES obj (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE ONLY blacklisted        ADD CONSTRAINT blacklisted_client_id                FOREIGN KEY (client_id)     REFERENCES client (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE UNIQUE INDEX                 blacklisted_name_object_id_client_id_uniq           ON blacklisted (name,object_id,coalesce(client_id,0));
+CREATE INDEX                        blacklisted_object_id_idx                           ON blacklisted (object_id);
 
