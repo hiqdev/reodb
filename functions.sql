@@ -834,7 +834,7 @@ CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text[]) RETURNS integ
 	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('type',$1) AND name = ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text) RETURNS integer[] AS $$
-	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('type',$1) AND name = ANY(csplit($2));
+	SELECT array_agg(obj_id) FROM ref WHERE _id=type_id($1) AND name = ANY(csplit($2));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3);
