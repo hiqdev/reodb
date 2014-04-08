@@ -13,6 +13,7 @@ SELECT set_ref(0,'class,ref',		'{lang:Reference}');
 SELECT set_ref(0,'class,prop',		'{lang:Property}');
 SELECT set_ref(0,'class,param',		'{lang:Param}');
 SELECT set_ref(0,'class,link',		'{lang:Link}');
+SELECT set_ref(0,'class,profile',   '{lang:Profile}');
 SELECT set_ref(0,'class,blacklist',	'{lang:Blacklist}');
 
 -- SCALARS
@@ -72,9 +73,9 @@ SELECT set_prop( 0,'prop:hidden',	scalar_id('boolean'),	'{lang:Hidden}',	'f');
 SELECT set_prop( 0,'prop:before_html',	scalar_id('text'),	'Additional html before input',	'');
 
 -- OBJECT_NAMEs
-SELECT set_prop( 0,'class:object_name',	scalar_id('label'),	'{lang:Object name}',	'');
-SELECT set_value(class_id('ref'),	'class:obj_name',	'ref_full_name(obj_id)');
-SELECT set_value(class_id('prop'),	'class:obj_name',	'class_full_name(class_id)||'':''||name');
+SELECT set_value(class_id('ref'),       'class:obj_name',   'ref_full_name(obj_id)');
+SELECT set_value(class_id('prop'),      'class:obj_name',   'class_full_name(class_id)||'':''||name');
+SELECT set_value(class_id('profile'),   'class:obj_name',   'ref_name(class_id)||'':''||name');
 
 -- PRIORITIES
 SELECT set_ref( 0,'type,priority',			'{lang:Priority}');
