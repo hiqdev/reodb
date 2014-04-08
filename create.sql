@@ -83,14 +83,14 @@ CREATE TABLE tag (
 );
 SELECT * INTO del_tag FROM tag limit 0;
 
-CREATE SEQUENCE "tag2_id_seq" START 1000000;
-CREATE TABLE tag2 (
-	id		integer		NOT NULL DEFAULT nextval('tag2_id_seq'),
-	src_id		integer		NOT NULL,
-	dst_id		integer		NOT NULL,
-	tag_id		integer		NOT NULL
+CREATE SEQUENCE "tie_id_seq" START 1000000;
+CREATE TABLE tie (
+    id              integer             NOT NULL DEFAULT nextval('tie_id_seq'),
+    src_id          integer             NOT NULL,
+    dst_id          integer             NOT NULL,
+    tag_id          integer             NOT NULL
 );
-SELECT * INTO del_tag2 FROM tag2 limit 0;
+SELECT * INTO del_tie FROM tie limit 0;
 
 CREATE TABLE link (
 	obj_id		integer		NOT NULL,
@@ -110,12 +110,23 @@ CREATE TABLE status (
 );
 SELECT now()::timestamp without time zone AS old_time,* INTO old_status FROM status limit 0;
 
-CREATE TABLE blacklist (
-	obj_id		integer		NOT NULL,
-	class_id	integer		NOT NULL,
-	user_id		integer		NOT NULL,
-	name		text		NOT NULL,
-	for_myself	boolean		NOT NULL DEFAULT TRUE
+CREATE TABLE profile (
+    obj_id          integer             NOT NULL,
+    type_id         integer             NOT NULL,
+    state_id        integer             NOT NULL,
+    class_id        integer             NOT NULL,
+    client_id       integer             NULL,
+    name            text                NOT NULL
 );
-SELECT * INTO del_blacklist FROM blacklist LIMIT 0;
+SELECT * INTO del_profile FROM profile LIMIT 0;
+
+CREATE SEQUENCE "blacklisted_id_seq" START 1000000;
+CREATE TABLE blacklisted (
+    id          integer     NOT NULL DEFAULT nextval('blacklisted_id_seq'),
+    object_id   integer     NOT NULL,
+    client_id   integer     NOT NULL,
+    name        text        NOT NULL,
+    message     text        NULL
+);
+SELECT * INTO del_blacklisted FROM blacklisted LIMIT 0;
 
