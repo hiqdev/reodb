@@ -63,14 +63,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- REODB TRIGGERS
-CREATE OR REPLACE FUNCTION reodb_before_delete_trigger () RETURNS "trigger" AS $$
+CREATE OR REPLACE FUNCTION reodb_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
-    IF ref_name(OLD.state_id)='deleted' THEN
-        EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
-        RETURN OLD;
-    END IF;
-    EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id=state_id('''||TG_RELNAME||''',''deleted'') WHERE obj_id='||OLD.obj_id;
-    RETURN NULL;
+	NEW.obj_id := coalesce(NEW.obj_id,nextval('obj_id_seq'));
+	IF NOT EXISTS (SELECT 1 FROM obj WHERE obj_id=NEW.obj_id) THEN
+		INSERT INTO obj (obj_id,class_id) VALUES (NEW.obj_id,class_id(TG_RELNAME));
+	END IF;
+	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $$
@@ -83,6 +82,64 @@ BEGIN
 	ELSE
 		RETURN OLD;
 	END IF;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_after_update_trigger () RETURNS "trigger" AS $$
+BEGIN
+	UPDATE obj SET update_time='now' WHERE obj_id=NEW.obj_id;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_mark_deleted_trigger () RETURNS "trigger" AS $$
+DECLARE
+	ds_id integer := state_id(TG_RELNAME,'deleted');
+BEGIN
+	IF OLD.state_id != ds_id THEN
+		EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id='||ds_id||' WHERE obj_id='||OLD.obj_id;
+	END IF;
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_before_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+    IF ref_name(OLD.state_id)='deleted' THEN
+        EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+        RETURN OLD;
+    END IF;
+    EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id=state_id('''||TG_RELNAME||''',''deleted'') WHERE obj_id='||OLD.obj_id;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_after_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+	DELETE FROM obj WHERE obj_id=OLD.obj_id;
+	RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_simple_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+	EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+	RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- NON OBJ TRIGGERS
+CREATE OR REPLACE FUNCTION nonobj_before_change_trigger () RETURNS "trigger" AS $$
+DECLARE
+    tmp text;
+BEGIN
+	EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE id='||OLD.id;
+	IF TG_OP='UPDATE' THEN
+		RETURN NEW;
+	ELSE
+		RETURN OLD;
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION nonobj_before_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+	EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE id='||OLD.id;
+	RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -159,10 +216,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- TAG2
-CREATE OR REPLACE FUNCTION tag2_before_insert_trigger () RETURNS "trigger" AS $$
+-- TIE
+CREATE OR REPLACE FUNCTION tie_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
-	IF EXISTS (SELECT 1 FROM tag2 WHERE src_id=NEW.src_id AND dst_id=NEW.dst_id AND tag_id=NEW.tag_id) THEN
+	IF EXISTS (SELECT 1 FROM tie WHERE src_id=NEW.src_id AND dst_id=NEW.dst_id AND tag_id=NEW.tag_id) THEN
 		RETURN NULL;
 	END IF;
 	RETURN NEW;
@@ -205,7 +262,7 @@ CREATE TRIGGER value_after_change_trigger AFTER INSERT OR UPDATE OR DELETE ON va
 CREATE TRIGGER tag_before_insert_trigger	BEFORE	INSERT	ON tag		FOR EACH ROW EXECUTE PROCEDURE tag_before_insert_trigger();
 
 -- TAG2
-CREATE TRIGGER tag2_before_insert_trigger	BEFORE	INSERT	ON tag2		FOR EACH ROW EXECUTE PROCEDURE tag2_before_insert_trigger();
+CREATE TRIGGER tie_before_insert_trigger	BEFORE	INSERT	ON tie		FOR EACH ROW EXECUTE PROCEDURE tie_before_insert_trigger();
 
 -- LINK
 CREATE TRIGGER link_before_insert_trigger	BEFORE	INSERT	ON link		FOR EACH ROW EXECUTE PROCEDURE link_before_insert_trigger();
