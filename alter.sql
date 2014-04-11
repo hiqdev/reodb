@@ -63,16 +63,16 @@ ALTER TABLE ONLY tag                ADD CONSTRAINT tag_tag_id_fkey              
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        tag_obj_id_idx                                      ON tag (obj_id);
 
--- TAG2
-ALTER TABLE ONLY tag2               ADD CONSTRAINT tag2_tag_id_src_id_dst_id_uniq       UNIQUE (tag_id,src_id,dst_id);
-ALTER TABLE ONLY tag2               ADD CONSTRAINT tag2_src_id_fkey                     FOREIGN KEY (src_id)    REFERENCES obj (obj_id)
+-- TIE
+ALTER TABLE ONLY tie                ADD CONSTRAINT tie_tag_id_src_id_dst_id_uniq        UNIQUE (tag_id,src_id,dst_id);
+ALTER TABLE ONLY tie                ADD CONSTRAINT tie_src_id_fkey                      FOREIGN KEY (src_id)    REFERENCES obj (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY tag2               ADD CONSTRAINT tag2_dst_id_fkey                     FOREIGN KEY (dst_id)    REFERENCES obj (obj_id)
+ALTER TABLE ONLY tie                ADD CONSTRAINT tie_dst_id_fkey                      FOREIGN KEY (dst_id)    REFERENCES obj (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE ONLY tag2               ADD CONSTRAINT tag2_tag_id_fkey                     FOREIGN KEY (tag_id)    REFERENCES obj (obj_id)
+ALTER TABLE ONLY tie                ADD CONSTRAINT tie_tag_id_fkey                      FOREIGN KEY (tag_id)    REFERENCES obj (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
-CREATE INDEX                        tag2_src_id_idx                                     ON tag2 (src_id);
-CREATE INDEX                        tag2_dst_id_idx                                     ON tag2 (dst_id);
+CREATE INDEX                        tie_src_id_idx                                      ON tie (src_id);
+CREATE INDEX                        tie_dst_id_idx                                      ON tie (dst_id);
 
 -- LINK
 ALTER TABLE ONLY link               ADD CONSTRAINT link_tag_id_dst_id_src_id_uniq       UNIQUE (tag_id,dst_id,src_id);
