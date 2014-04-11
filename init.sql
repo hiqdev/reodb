@@ -11,10 +11,9 @@ SELECT set_ref(0,'class',               '{lang:Class}');
 -- BASIC CLASSES
 SELECT set_ref(0,'class,ref',           '{lang:Reference}');
 SELECT set_ref(0,'class,prop',          '{lang:Property}');
-SELECT set_ref(0,'class,param',         '{lang:Param}');
 SELECT set_ref(0,'class,link',          '{lang:Link}');
 SELECT set_ref(0,'class,profile',       '{lang:Profile}');
-SELECT set_ref(0,'class,blacklist',     '{lang:Blacklist}');
+SELECT set_ref(0,'class,change',        '{lang:Change}');
 
 -- SCALARS
 SELECT set_ref('scalar,integer',        '{lang:integer}');
@@ -91,4 +90,9 @@ SELECT set_ref( 2,'type,grade,bad',             '{lang:Bad}');
 SELECT set_ref( 3,'type,grade,ok',              '{lang:O.k.}');
 SELECT set_ref( 4,'type,grade,good',            '{lang:Good}');
 SELECT set_ref( 5,'type,grade,excellent',       '{lang:Excellent}');
+
+-- CHANGE states
+SELECT set_ref( 0,'state,change',               '{lang:States of change}');
+SELECT set_ref( 1,'state,change,new',           '{lang:New}');
+SELECT set_ref( 2,'state,change,approved',      '{lang:Approved}');
 

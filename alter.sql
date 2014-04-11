@@ -109,3 +109,15 @@ ALTER TABLE ONLY blacklisted        ADD CONSTRAINT blacklisted_client_id        
 CREATE UNIQUE INDEX                 blacklisted_name_object_id_client_id_uniq           ON blacklisted (name,object_id,coalesce(client_id,0));
 CREATE INDEX                        blacklisted_object_id_idx                           ON blacklisted (object_id);
 
+-- CHANGE
+ALTER TABLE ONLY change             ADD CONSTRAINT change_obj_id_pkey                   PRIMARY KEY (obj_id);
+ALTER TABLE ONLY change             ADD CONSTRAINT change_obj_id_fkey                   FOREIGN KEY (obj_id)        REFERENCES obj (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY change             ADD CONSTRAINT change_type_id_fkey                  FOREIGN KEY (type_id)       REFERENCES ref (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY change             ADD CONSTRAINT change_state_id_fkey                 FOREIGN KEY (state_id)      REFERENCES ref (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY change             ADD CONSTRAINT change_client_id_fkey                FOREIGN KEY (client_id)     REFERENCES client (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE INDEX                        change_type_id_idx                                  ON change (type_id);
+

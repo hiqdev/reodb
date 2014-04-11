@@ -130,3 +130,15 @@ CREATE TABLE blacklisted (
 );
 SELECT * INTO del_blacklisted FROM blacklisted LIMIT 0;
 
+CREATE TABLE change (
+    obj_id          integer             NOT NULL,
+    type_id         integer             NOT NULL,
+    state_id        integer             NOT NULL,
+    client_id       integer             NOT NULL,
+    client_comment  text                NOT NULL,
+    time            timestamp           NOT NULL DEFAULT now(),
+    approve_comment text                NULL,
+    approve_time    timestamp           NULL
+);
+SELECT * INTO del_change FROM change LIMIT 0;
+
