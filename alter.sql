@@ -117,7 +117,10 @@ ALTER TABLE ONLY change             ADD CONSTRAINT change_type_id_fkey          
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY change             ADD CONSTRAINT change_state_id_fkey                 FOREIGN KEY (state_id)      REFERENCES ref (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY change             ADD CONSTRAINT change_class_id_fkey                 FOREIGN KEY (class_id)      REFERENCES ref (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY change             ADD CONSTRAINT change_client_id_fkey                FOREIGN KEY (client_id)     REFERENCES client (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE CASCADE;
-CREATE INDEX                        change_type_id_idx                                  ON change (type_id);
+CREATE INDEX                        change_class_id_idx                                 ON change (class_id);
+CREATE INDEX                        change_record_id_idx                                ON change (record_id);
 

@@ -110,15 +110,15 @@ BEGIN
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE FUNCTION reodb_after_delete_trigger () RETURNS "trigger" AS $$
-BEGIN
-    DELETE FROM obj WHERE obj_id=OLD.obj_id;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_simple_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
     EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_after_delete_trigger () RETURNS "trigger" AS $$
+BEGIN
+    DELETE FROM obj WHERE obj_id=OLD.obj_id;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -273,6 +273,6 @@ CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON link     
 -- CHANGE
 CREATE TRIGGER reodb_before_insert_trigger          BEFORE  INSERT  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_before_insert_trigger();
 CREATE TRIGGER reodb_after_update_trigger           AFTER   UPDATE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_after_update_trigger();
-CREATE TRIGGER reodb_before_delete_trigger          BEFORE  DELETE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_before_delete_trigger();
+CREATE TRIGGER reodb_simple_delete_trigger          BEFORE  DELETE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_simple_delete_trigger();
 CREATE TRIGGER reodb_after_delete_trigger           AFTER   DELETE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_after_delete_trigger();
 

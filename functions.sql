@@ -135,6 +135,46 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
 	SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
+
+-- STR2something
+CREATE OR REPLACE FUNCTION str2boolean (a text) RETURNS boolean AS $$
+BEGIN
+	BEGIN
+        RETURN a::boolean;
+	EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+	END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2integer (a text) RETURNS integer AS $$
+BEGIN
+    BEGIN
+        RETURN a::integer;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2double (a text) RETURNS double precision AS $$
+BEGIN
+    BEGIN
+        RETURN a::double precision;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2timestamp (a text) RETURNS timestamp AS $$
+BEGIN
+    BEGIN
+        RETURN a::timestamp;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+-- OLD STR2something
 CREATE OR REPLACE FUNCTION str2int (a text,def integer) RETURNS integer AS $$
 DECLARE
 	r integer;
@@ -625,24 +665,32 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_class (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_state_id (a_obj_id integer) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_object_state_id (a_obj_id integer) RETURNS integer AS $$
 DECLARE
 	res integer;
 BEGIN
-	EXECUTE 'SELECT state_id FROM '|| (
-		SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
-	) ||' WHERE obj_id='||a_obj_id INTO res;
-	RETURN res;
+    BEGIN
+        EXECUTE 'SELECT state_id FROM '|| (
+            SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
+        ) ||' WHERE obj_id='||a_obj_id INTO res;
+        RETURN res;
+	EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+	END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_state (a_obj_id integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_object_state (a_obj_id integer) RETURNS text AS $$
 DECLARE
 	res text;
 BEGIN
-	EXECUTE 'SELECT name FROM ref WHERE obj_id=(SELECT state_id FROM '|| (
-		SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
-	) ||' WHERE obj_id='||a_obj_id||')' INTO res;
-	RETURN res;
+    BEGIN
+        EXECUTE 'SELECT name FROM ref WHERE obj_id=(SELECT state_id FROM '|| (
+            SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=a_obj_id)
+        ) ||' WHERE obj_id='||a_obj_id||')' INTO res;
+        RETURN res;
+	EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+	END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -730,6 +778,12 @@ CREATE OR REPLACE FUNCTION ref_id (text,text) RETURNS integer AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (text,text,text) RETURNS integer AS $$
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id($1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_types text) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=$1 AND name=ANY(csplit($2));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_names text[]) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM ref WHERE _id=$1 AND name=ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=$1 AND name IN ($2,$3);
@@ -831,10 +885,10 @@ CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text)
 	SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('type',$1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
-	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('type',$1) AND name = ANY($2);
+    SELECT ref_ids(type_id($1),$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text) RETURNS integer[] AS $$
-	SELECT array_agg(obj_id) FROM ref WHERE _id=type_id($1) AND name = ANY(csplit($2));
+    SELECT ref_ids(type_id($1),$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3);
@@ -859,10 +913,10 @@ CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer 
 	SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
-	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('state',$1) AND name = ANY($2);
+    SELECT ref_ids(ref_id('state',$1),$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS integer[] AS $$
-	SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id('state',$1) AND name = ANY(csplit($2));
+    SELECT ref_ids(ref_id('state',$1),$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
@@ -1552,6 +1606,10 @@ BEGIN
     return res;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_params2hstore (a_obj_id integer) RETURNS hstore AS $$
+    SELECT hstore(array_agg(p.name),array_agg(v.value))
+    FROM value v JOIN prop p ON p.obj_id=v.prop_id AND v.obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- TAG
@@ -1615,7 +1673,7 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS integer AS $$
     SELECT obj_id(split_part($1,':',1),split_part($1,':',2));
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id (a_class text,a_name text) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION record_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE
     res integer;
 BEGIN
@@ -1627,6 +1685,24 @@ BEGIN
     RETURN res;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION record_id (a_class text,a hstore) RETURNS integer AS $$
+DECLARE
+    res integer;
+BEGIN
+    BEGIN
+        EXECUTE 'SELECT '||a_class||'_id(('''||a::text||''')::hstore)' INTO res;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION record_id (a_class_id integer,a_name text) RETURNS integer AS $$
+    SELECT record_id(ref_name($1),$2);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION record_id (a_class_id integer,a hstore) RETURNS integer AS $$
+    SELECT record_id(ref_name($1),$2);
+$$ LANGUAGE sql STABLE STRICT;
 
 --- VALUES DEBUG
 CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
@@ -1733,16 +1809,71 @@ CREATE OR REPLACE FUNCTION get_session_user_id () RETURNS integer AS $$
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
--- LOG
-----------------------------
-----------------------------
--- LOG_VAR
-----------------------------
-
-----------------------------
 -- PG
 ----------------------------
 CREATE OR REPLACE FUNCTION pg_typename (a_oid integer) RETURNS name AS $$
 	SELECT typname FROM pg_type WHERE oid=$1;
 $$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
+-- CHANGE
+----------------------------
+CREATE OR REPLACE FUNCTION get_change_class_id (a_id integer) RETURNS integer AS $$
+    SELECT class_id FROM change WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION replace_change (a_id integer,a hstore,a_params hstore) RETURNS integer AS $$
+DECLARE
+    the_id      integer := a_id;
+    a_type_id   integer := coalesce(str2integer(a->'type_id'),type_id('change,'||(a->'type')));
+    a_state_id  integer := coalesce(str2integer(a->'state_id'),state_id('change,'||(a->'state')));
+    a_class_id  integer := coalesce(str2integer(a->'class_id'),class_id(a->'class'));
+    a_record_id integer := coalesce(str2integer(a->'record_id'),record_id(a_class_id,a_params));
+    a_client_id integer := coalesce(str2integer(a->'client_id'),client_id(a->'client'));
+    prep        replace_data;
+    cur         change%ROWTYPE;
+BEGIN
+    IF the_id IS NOT NULL THEN
+        SELECT INTO cur * FROM change WHERE obj_id = the_id;
+    END IF;
+    prep := (NULL,NULL,NULL);
+    prep := prepare_replace(prep,'type_id',         a_type_id,                          cur.type_id);
+    prep := prepare_replace(prep,'state_id',        a_state_id,                         cur.state_id);
+    prep := prepare_replace(prep,'class_id',        a_class_id,                         cur.class_id);
+    prep := prepare_replace(prep,'client_id',       a_client_id,                        cur.client_id);
+    prep := prepare_replace(prep,'record_id',       a_record_id,                        cur.record_id);
+    prep := prepare_replace(prep,'time',            str2timestamp(a->'time'),           cur.time);
+    prep := prepare_replace(prep,'user_comment',    a->'user_comment',                  cur.user_comment);
+    prep := prepare_replace(prep,'tech_comment',    a->'tech_comment',                  cur.tech_comment);
+    prep := prepare_replace(prep,'finish_time',     str2timestamp(a->'finish_time'),    cur.finish_time);
+    IF prep.sets IS NULL THEN
+        -- DO NOTHING
+    ELSIF the_id IS NULL THEN
+        EXECUTE 'INSERT INTO change ('||prep.keys||') VALUES ('||prep.vals||') RETURNING obj_id' INTO the_id;
+    ELSIF prep.sets!='' THEN
+        EXECUTE 'UPDATE change SET '||prep.sets||' WHERE obj_id='||the_id' RETURNING obj_id' INTO the_id;
+    END IF;
+    PERFORM set_params(the_id,a_params);
+    RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION finish_change (a_state text,a_id integer,a_record_id integer) RETURNS integer AS $$
+DECLARE
+    z_type  name;
+    z_class name;
+BEGIN
+    UPDATE change SET state_id=state_id('change',a_state),finish_time=now(),record_id=coalesce(a_record_id,record_id)
+    WHERE obj_id=a_id RETURNING ref_name(type_id),ref_name(class_id) INTO z_type,z_class;
+    IF a_state='approved' AND z_type='set' THEN
+        EXECUTE 'SELECT set_'||z_class||'(get_params2hstore('||a_id||'))';
+    END IF;
+    DELETE FROM change WHERE obj_id=a_id;
+    RETURN a_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION approve_change (a_id integer,a_record_id integer) RETURNS integer AS $$
+    SELECT finish_change('approved',$1,$2);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION reject_change (a_id integer,a_record_id integer) RETURNS integer AS $$
+    SELECT finish_change('rejected',$1,$2);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
