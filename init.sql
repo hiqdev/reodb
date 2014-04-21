@@ -96,6 +96,7 @@ SELECT set_ref( 5,'type,grade,excellent',       '{lang:Excellent}');
 SELECT set_ref( 0,'type,change',                '{lang:Types of change}');
 SELECT set_ref( 1,'type,change,set',            '{lang:Set}');
 SELECT set_ref( 2,'type,change,replace',        '{lang:Replace}');
+SELECT set_ref( 3,'type,change,api',            '{lang:API}');
 
 -- CHANGE states
 SELECT set_ref( 0,'state,change',               '{lang:States of change}');
