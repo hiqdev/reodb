@@ -1852,20 +1852,25 @@ BEGIN
     ELSIF prep.sets!='' THEN
         EXECUTE 'UPDATE change SET '||prep.sets||' WHERE obj_id='||the_id' RETURNING obj_id' INTO the_id;
     END IF;
+    IF a?'command' THEN
+        a_params := a_params || ('_command'=>(a->'command'));
+    END IF;
     PERFORM set_params(the_id,a_params);
     RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION finish_change (a_state text,a_id integer,a_record_id integer) RETURNS integer AS $$
 DECLARE
-    z_type  name;
-    z_class name;
+    z_type      name;
+    z_class     name;
+    z_record_id integer;
 BEGIN
-    UPDATE change SET state_id=state_id('change',a_state),finish_time=now(),record_id=coalesce(a_record_id,record_id)
-    WHERE obj_id=a_id RETURNING ref_name(type_id),ref_name(class_id) INTO z_type,z_class;
+    SELECT INTO z_type,z_class ref_name(type_id),ref_name(class_id) FROM change WHERE obj_id=a_id;
     IF a_state='approved' AND z_type='set' THEN
-        EXECUTE 'SELECT set_'||z_class||'(get_params2hstore('||a_id||'))';
+        EXECUTE 'SELECT set_'||z_class||'(get_params2hstore('||a_id||'))' INTO z_record_id;
     END IF;
+    UPDATE change SET state_id=state_id('change',a_state),finish_time=now(),record_id=coalesce(a_record_id,z_record_id,record_id)
+    WHERE obj_id=a_id;
     DELETE FROM change WHERE obj_id=a_id;
     RETURN a_id;
 END;
