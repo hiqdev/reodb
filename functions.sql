@@ -173,6 +173,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2interval (a text) RETURNS interval AS $$
+BEGIN
+    BEGIN
+        RETURN a::interval;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 -- OLD STR2something
 CREATE OR REPLACE FUNCTION str2int (a text,def integer) RETURNS integer AS $$
