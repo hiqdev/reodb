@@ -81,11 +81,3 @@ CREATE OR REPLACE VIEW errors AS
 	GROUP BY	s.object_id
 ;
 
--- BLACKLIST
-CREATE OR REPLACE VIEW blacklist_h AS
-	SELECT		b.obj_id,t.name AS class,obj_full_name(b.user_id) AS user,b.name,to_sign(b.for_myself) AS for_myself,o.label
-	FROM		blacklist	b
-	JOIN		obj		o ON o.obj_id=b.obj_id
-	LEFT JOIN	ref		t ON t.obj_id=b.class_id
-;
-

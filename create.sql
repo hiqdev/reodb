@@ -120,16 +120,6 @@ CREATE TABLE profile (
 );
 SELECT * INTO del_profile FROM profile LIMIT 0;
 
-CREATE SEQUENCE "blacklisted_id_seq" START 1000000;
-CREATE TABLE blacklisted (
-    id              integer             NOT NULL DEFAULT nextval('blacklisted_id_seq'),
-    object_id       integer             NOT NULL,
-    client_id       integer             NOT NULL,
-    name            text                NOT NULL,
-    message         text                NULL
-);
-SELECT * INTO del_blacklisted FROM blacklisted LIMIT 0;
-
 CREATE TABLE change (
     obj_id          integer             NOT NULL,
     type_id         integer             NOT NULL,
