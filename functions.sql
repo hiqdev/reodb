@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value inet) AS $$
 	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
 		CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value inet,old inet) AS $$
 	SELECT	CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
-		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3 END,
+		CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
 		CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
@@ -71,6 +71,11 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[],a_delimiter text) RETURNS text AS $$
 	SELECT array_to_string($1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+
+--- STRING functions
+CREATE OR REPLACE FUNCTION collapse_spaces (a text) RETURNS text AS $$
+    SELECT regexp_replace($1,E'\\s+',' ','g');
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 -- LANG
 CREATE OR REPLACE FUNCTION unlang (a_str text) RETURNS text AS $$
@@ -137,6 +142,17 @@ CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
 $$ LANGUAGE sql VOLATILE STRICT;
 
 -- STR2something
+CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
+DECLARE
+	r inet;
+BEGIN
+	BEGIN
+		RETURN a::inet;
+	EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+	END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2boolean (a text) RETURNS boolean AS $$
 BEGIN
 	BEGIN
@@ -224,19 +240,6 @@ BEGIN
 			-- do nothing
 	END;
 	RETURN coalesce(r,0);
-END;
-$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
-DECLARE
-	r inet;
-BEGIN
-	BEGIN
-		SELECT INTO r a::inet;
-	EXCEPTION
-		WHEN OTHERS THEN
-			-- do nothing
-	END;
-	RETURN r;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2time (a text) RETURNS timestamp AS $$
@@ -482,6 +485,12 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION to_day (timestamp with time zone) RETURNS timestamp AS $$
 	SELECT date_trunc('day',coalesce($1,now())::timestamp);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION today () RETURNS timestamp AS $$
+	SELECT date_trunc('day',now()::timestamp);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION today (timestamp with time zone) RETURNS timestamp AS $$
+	SELECT date_trunc('day',coalesce($1,now())::timestamp);
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION tomorrow () RETURNS timestamp AS $$
 	SELECT date_trunc('day',now()::timestamp+'1day'::interval);
 $$ LANGUAGE sql STABLE STRICT;
@@ -666,15 +675,15 @@ CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double pre
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
--- GET OBJECT CLASS/STATE
+-- GET OBJ CLASS/STATE
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_class_id (a_obj_id integer) RETURNS integer AS $$
-	SELECT class_id FROM obj WHERE obj_id = $1;
+CREATE OR REPLACE FUNCTION get_obj_class_id (a_obj_id integer) RETURNS integer AS $$
+	SELECT class_id FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_class (a_obj_id integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_obj_class (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_object_state_id (a_obj_id integer) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION get_obj_state_id (a_obj_id integer) RETURNS integer AS $$
 DECLARE
 	res integer;
 BEGIN
@@ -688,7 +697,7 @@ BEGIN
 	END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_object_state (a_obj_id integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_obj_state (a_obj_id integer) RETURNS text AS $$
 DECLARE
 	res text;
 BEGIN
@@ -1810,10 +1819,10 @@ BEGIN
     ELSIF the_id IS NULL THEN
         EXECUTE 'INSERT INTO change ('||prep.keys||') VALUES ('||prep.vals||') RETURNING obj_id' INTO the_id;
     ELSIF prep.sets!='' THEN
-        EXECUTE 'UPDATE change SET '||prep.sets||' WHERE obj_id='||the_id' RETURNING obj_id' INTO the_id;
+        EXECUTE 'UPDATE change SET '||prep.sets||' WHERE obj_id='||the_id||' RETURNING obj_id' INTO the_id;
     END IF;
     IF a?'command' THEN
-        a_params := a_params || ('_command'=>(a->'command'));
+        a_params := a_params || hstore('_command',a->'command');
     END IF;
     PERFORM set_params(the_id,a_params);
     RETURN the_id;
