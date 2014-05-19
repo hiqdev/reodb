@@ -39,6 +39,7 @@ SELECT set_ref('scalar,domain',         '{lang:domain}');
 SELECT set_ref('scalar,domains',        '{lang:domains}');
 SELECT set_ref('scalar,filtertext',     '{lang:filter text}');
 SELECT set_ref('scalar,label',          '{lang:label}');
+SELECT set_ref('scalar,systempath',     '{lang:system path}');
 
 -- PROPS
 SELECT set_prop( 1,'class:label',       scalar_id('text'),      '{lang:Label}',         '',     TRUE,NULL,NULL,NULL);
