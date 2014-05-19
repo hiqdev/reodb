@@ -1672,21 +1672,22 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 ----------------------------
 -- OBJECT
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION get_obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
-	class	text;
-	name	text;
+    class   text;
+    name    text;
 BEGIN
-	SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name',r.name)
-	FROM ref r WHERE obj_id = (SELECT class_id FROM obj WHERE obj_id=$1);
-	IF name IS NOT NULL THEN
-		EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||$1 INTO name;
-	END IF;
-	RETURN name;
+    SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name',r.name)
+    FROM ref r WHERE obj_id = (SELECT class_id FROM obj WHERE obj_id=$1);
+    IF name IS NOT NULL THEN
+        EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||$1 INTO name;
+        RETURN name;
+    END IF;
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id integer) RETURNS text AS $$
-	SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
+CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
+    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS integer AS $$
     SELECT obj_id(split_part($1,':',1),split_part($1,':',2));
