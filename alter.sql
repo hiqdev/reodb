@@ -100,18 +100,3 @@ CREATE INDEX                        status_subject_id_idx                       
 CREATE INDEX                        status_type_id_idx                                  ON status (type_id);
 CREATE INDEX                        status_time_idx                                     ON status (time);
 
--- CHANGE
-ALTER TABLE ONLY change             ADD CONSTRAINT change_obj_id_pkey                   PRIMARY KEY (obj_id);
-ALTER TABLE ONLY change             ADD CONSTRAINT change_obj_id_fkey                   FOREIGN KEY (obj_id)        REFERENCES obj (obj_id)
-                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY change             ADD CONSTRAINT change_type_id_fkey                  FOREIGN KEY (type_id)       REFERENCES ref (obj_id)
-                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY change             ADD CONSTRAINT change_state_id_fkey                 FOREIGN KEY (state_id)      REFERENCES ref (obj_id)
-                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY change             ADD CONSTRAINT change_class_id_fkey                 FOREIGN KEY (class_id)      REFERENCES ref (obj_id)
-                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
-ALTER TABLE ONLY change             ADD CONSTRAINT change_client_id_fkey                FOREIGN KEY (client_id)     REFERENCES client (obj_id)
-                                                                                        ON UPDATE CASCADE ON DELETE CASCADE;
-CREATE INDEX                        change_class_id_idx                                 ON change (class_id);
-CREATE INDEX                        change_record_id_idx                                ON change (record_id);
-

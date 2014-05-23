@@ -12,8 +12,6 @@ SELECT set_ref(0,'class',               '{lang:Class}');
 SELECT set_ref(0,'class,ref',           '{lang:Reference}');
 SELECT set_ref(0,'class,prop',          '{lang:Property}');
 SELECT set_ref(0,'class,link',          '{lang:Link}');
-SELECT set_ref(0,'class,profile',       '{lang:Profile}');
-SELECT set_ref(0,'class,change',        '{lang:Change}');
 
 -- SCALARS
 SELECT set_ref('scalar,integer',        '{lang:integer}');
@@ -75,8 +73,6 @@ SELECT set_prop( 0,'prop:before_html',  scalar_id('text'),      'Additional html
 -- OBJECT_NAMEs
 SELECT set_value(class_id('ref'),       'class:obj_name',       'ref_full_name(obj_id)');
 SELECT set_value(class_id('prop'),      'class:obj_name',       'class_full_name(class_id)||'':''||name');
-SELECT set_value(class_id('profile'),   'class:obj_name',       'ref_name(class_id)||'':''||name');
-SELECT set_value(class_id('change'),    'class:obj_name',       'ref_name(type_id)||'':''||obj_id');
 
 -- PRIORITIES
 SELECT set_ref( 0,'type,priority',              '{lang:Priority}');
@@ -92,16 +88,4 @@ SELECT set_ref( 2,'type,grade,bad',             '{lang:Bad}');
 SELECT set_ref( 3,'type,grade,ok',              '{lang:O.k.}');
 SELECT set_ref( 4,'type,grade,good',            '{lang:Good}');
 SELECT set_ref( 5,'type,grade,excellent',       '{lang:Excellent}');
-
--- CHANGE types
-SELECT set_ref( 0,'type,change',                '{lang:Types of change}');
-SELECT set_ref( 1,'type,change,set',            '{lang:Set}');
-SELECT set_ref( 2,'type,change,replace',        '{lang:Replace}');
-SELECT set_ref( 3,'type,change,api',            '{lang:API}');
-
--- CHANGE states
-SELECT set_ref( 0,'state,change',               '{lang:States of change}');
-SELECT set_ref( 1,'state,change,new',           '{lang:New}');
-SELECT set_ref( 2,'state,change,approved',      '{lang:Approved}');
-SELECT set_ref( 3,'state,change,rejected',      '{lang:Rejected}');
 

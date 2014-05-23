@@ -270,9 +270,3 @@ CREATE TRIGGER odb_after_update_trigger             AFTER   UPDATE  ON link     
 CREATE TRIGGER odb_before_change_trigger    BEFORE UPDATE OR DELETE ON link         FOR EACH ROW EXECUTE PROCEDURE odb_before_change_trigger();
 CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON link         FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
 
--- CHANGE
-CREATE TRIGGER reodb_before_insert_trigger          BEFORE  INSERT  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_before_insert_trigger();
-CREATE TRIGGER reodb_after_update_trigger           AFTER   UPDATE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_after_update_trigger();
-CREATE TRIGGER reodb_simple_delete_trigger          BEFORE  DELETE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_simple_delete_trigger();
-CREATE TRIGGER reodb_after_delete_trigger           AFTER   DELETE  ON change       FOR EACH ROW EXECUTE PROCEDURE reodb_after_delete_trigger();
-
