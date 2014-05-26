@@ -1,7 +1,7 @@
 -- OBJ
 CREATE OR REPLACE VIEW obj_h AS
     SELECT      o.obj_id,r.name AS class,get_obj_name(o.obj_id) AS name,o.label,o.descr,
-            create_time,update_time
+                create_time,update_time
     FROM        obj o
     LEFT JOIN   ref r ON r.obj_id=o.class_id
 ;
