@@ -1,5 +1,7 @@
 -- $Header: /home/sol/usr/cvs/reodb/create.sql,v 1.2 2007/08/31 11:16:18 sol Exp $
 
+CREATE TYPE actions AS ENUM ('INSERT','UPDATE','DELETE');
+
 CREATE SEQUENCE "obj_id_seq" START 1000000;
 CREATE TABLE obj (
     obj_id          integer             NOT NULL DEFAULT nextval('obj_id_seq'),
@@ -109,14 +111,4 @@ CREATE TABLE status (
     time            timestamp           NOT NULL DEFAULT now()
 );
 SELECT now()::timestamp without time zone AS old_time,* INTO old_status FROM status limit 0;
-
-CREATE TABLE profile (
-    obj_id          integer             NOT NULL,
-    type_id         integer             NOT NULL,
-    state_id        integer             NOT NULL,
-    class_id        integer             NOT NULL,
-    client_id       integer             NULL,
-    name            text                NOT NULL
-);
-SELECT * INTO del_profile FROM profile LIMIT 0;
 

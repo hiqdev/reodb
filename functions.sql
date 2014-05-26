@@ -347,6 +347,14 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
 	SELECT $1~E'^\\$\\d\\$';
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION check_onetime_password (a_test text,a_pwd text) RETURNS boolean AS $$
+DECLARE
+    a_now numeric := str2num(split_part(a_test,'-',1));
+    z_now bigint  := to_epoch(now());
+BEGIN
+    RETURN z_now>a_now AND z_now<a_now+20 AND split_part(a_test,'-',2)=onetime_hash(a_pwd,a_now::text);
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION check_password (a_test text,a_pwd text) RETURNS boolean AS $$
 	SELECT check_onetime_password($1,$2) OR CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -366,14 +374,6 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION onetime_password (a_pwd text) RETURNS text AS $$
     SELECT onetime_password($1,now()::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION check_onetime_password (a_test text,a_pwd text) RETURNS boolean AS $$
-DECLARE
-    a_now numeric := str2num(split_part(a_test,'-',1));
-    z_now bigint  := to_epoch(now());
-BEGIN
-    RETURN z_now>a_now AND z_now<a_now+20 AND split_part(a_test,'-',2)=onetime_hash(a_pwd,a_now::text);
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --	'/www/rcp3/src/sql/last_strpos','last_strpos'
@@ -1101,20 +1101,6 @@ CREATE OR REPLACE FUNCTION set_errors (a_obj_id integer,errors text[]) RETURNS i
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 
 ----------------------------
--- PAGE
-----------------------------
-CREATE OR REPLACE FUNCTION ref_page_id (a_page text) RETURNS integer AS $$
-	SELECT obj_id FROM ref WHERE name=$1 AND _id IN (SELECT obj_id FROM ref WHERE ref_id('error') IN (obj_id,_id));
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION set_ref_page_id (a_page text) RETURNS integer AS $$
-DECLARE
-BEGIN
-	FOREACH p IN ARRAY csplit(a_page) LOOP
-	END LOOP;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
-
-----------------------------
 -- PROP
 ----------------------------
 CREATE OR REPLACE FUNCTION prop_id (a_prop text) RETURNS integer AS $$
@@ -1687,10 +1673,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_id (a_object text) RETURNS integer AS $$
-    SELECT obj_id(split_part($1,':',1),split_part($1,':',2));
+    SELECT class_full_name(class_id)||':'||get_obj_name($1) FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION record_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE
@@ -1722,10 +1705,13 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION record_id (a_class_id integer,a hstore) RETURNS integer AS $$
     SELECT record_id(ref_name($1),$2);
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION record_id (a_object text) RETURNS integer AS $$
+    SELECT record_id(split_part($1,':',1),split_part($1,':',2));
+$$ LANGUAGE sql STABLE STRICT;
 
 --- VALUES DEBUG
 CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
-	SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN obj_full_name($1::integer) ELSE $1 END
+	SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN get_obj_full_name($1::integer) ELSE $1 END
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
 	SELECT	cjoin(val)
@@ -1738,19 +1724,6 @@ CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
 		ORDER BY	c.name,p.name,v.no
 	)	AS a
 $$ LANGUAGE sql STABLE STRICT;
-
-----------------------------
--- PROFILE
-----------------------------
-CREATE OR REPLACE FUNCTION profile_id (a_class text,a_name text) RETURNS integer AS $$
-	SELECT obj_id FROM profile WHERE class_id=class_id($1) AND name=upper($2);
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION new_profile (a_class text,a_name text) RETURNS integer AS $$
-	INSERT INTO profile (class_id,name) VALUES (class_id($1),upper($2)) RETURNING obj_id;
-$$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_profile (a_class text,a_name text) RETURNS integer AS $$
-	SELECT coalesce(profile_id($1,$2),new_profile($1,$2));
-$$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- SESSION
