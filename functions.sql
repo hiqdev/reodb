@@ -525,7 +525,7 @@ CREATE OR REPLACE FUNCTION prev_month () RETURNS timestamp AS $$
     SELECT date_trunc('month',now()::timestamp-'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prev_month (timestamp with time zone) RETURNS timestamp AS $$
-    SELECT date_trunc('month',coalesce($1,now())::timestamp+'1month'::interval);
+    SELECT date_trunc('month',coalesce($1,now())::timestamp-'1month'::interval);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION next_month () RETURNS timestamp AS $$
     SELECT date_trunc('month',now()::timestamp+'1month'::interval);
@@ -797,6 +797,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (text,text,text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id($1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_id (text,text,text,text) RETURNS integer AS $$
+    SELECT obj_id FROM ref WHERE name=$4 AND _id=ref_id($1,$2, $3);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_types text) RETURNS integer[] AS $$
     SELECT array_agg(obj_id) FROM ref WHERE _id=$1 AND name=ANY(csplit($2));
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -901,6 +904,9 @@ CREATE OR REPLACE FUNCTION type_id (a_parent text,a_ref text) RETURNS integer AS
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('type',$1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION type_id (a_ggparent text,a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
+    SELECT obj_id FROM ref WHERE name=$4 AND _id=ref_id('type',$1,$2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
     SELECT ref_ids(type_id($1),$2);
