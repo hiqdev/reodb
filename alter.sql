@@ -38,7 +38,8 @@ ALTER TABLE ONLY value              ADD CONSTRAINT value_obj_id_fkey            
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY value              ADD CONSTRAINT value_prop_id_fkey                   FOREIGN KEY (prop_id)   REFERENCES prop (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
-CREATE INDEX                        value_value_idx                                     ON value (value);
+--- XXX doesn't work
+--- CREATE INDEX                        value_value_idx                                     ON value (value);
 CREATE INDEX                        value_obj_id_idx                                    ON value (obj_id);
 CREATE INDEX                        value_prop_id_idx                                   ON value (prop_id);
 

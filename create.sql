@@ -47,6 +47,7 @@ CREATE TABLE value (
     value           text                NOT NULL DEFAULT ''
 );
 SELECT * INTO del_value FROM value LIMIT 0;
+--- XXX PURGE old_value
 
 CREATE TABLE integer_value (
     id              integer             NOT NULL DEFAULT nextval('value_id_seq'),
