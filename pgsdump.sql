@@ -1,3 +1,5 @@
+\timing off
+
 --- SEQUENCES
 SELECT 'SEQUENCE' AS object, relname FROM pg_class WHERE relname NOT LIKE 'pg_%' AND relkind='S' ORDER BY relname;
 
