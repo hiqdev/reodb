@@ -806,6 +806,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_names text[]) RETURNS integer[] AS $$
     SELECT array_agg(obj_id) FROM ref WHERE _id=$1 AND name=ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_types text) RETURNS integer[] AS $$
+    SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id($1) AND name=ANY(csplit($2));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
+    SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id($1) AND name=ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_1 text,a_2 text) RETURNS SETOF integer AS $$
     SELECT obj_id FROM ref WHERE _id=$1 AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -1658,6 +1664,18 @@ BEGIN
         RETURNING id INTO the_id;
     END IF;
     RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+
+CREATE OR REPLACE FUNCTION set_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+DECLARE
+    d integer;
+    res integer;
+BEGIN
+    FOREACH d IN ARRAY a_dst_ids LOOP
+        INSERT INTO tie (src_id,tag_id,dst_id) VALUES (a_src_id,a_tag_id,d) RETURNING id INTO res;
+    END LOOP;
+    RETURN res;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
