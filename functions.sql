@@ -1672,6 +1672,7 @@ DECLARE
     d integer;
     res integer;
 BEGIN
+    DELETE FROM tie WHERE src_id=a_src_id AND tag_id=a_tag_id;
     FOREACH d IN ARRAY a_dst_ids LOOP
         INSERT INTO tie (src_id,tag_id,dst_id) VALUES (a_src_id,a_tag_id,d) RETURNING id INTO res;
     END LOOP;
