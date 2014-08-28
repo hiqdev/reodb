@@ -103,15 +103,18 @@ WHERE       relname NOT LIKE 'pg_%' AND relkind='v'
 ORDER BY    relname;
 
 --- REFS
-SELECT      'REF' AS obj,
-            '0' AS no,ref_full_name(obj_id) AS full_name,t.label,md5(dump_all_values(t.obj_id)) AS values
+SELECT      'REF' AS obj,'0' AS no,
+            rpad(ref_full_name(obj_id),40,' ') AS full_name,
+            rpad(t.label,40,' ') AS label,
+            md5(dump_all_values(t.obj_id)) AS values
 FROM        ref t
 LEFT JOIN   obj o USING (obj_id)
 ORDER BY    full_name;
 
 --- PROPS
-SELECT      'PROP' AS obj,
-            p.no,class_full_name(p.class_id) AS class,p.name AS prop,ref_full_name(type_id) AS type,
+SELECT      'PROP' AS obj,p.no,
+            rpad(class_full_name(p.class_id),40,' ') AS class,
+            rpad(p.name,'20',' ') AS prop,ref_full_name(type_id) AS type,
             to_sign(is_in_table)||to_sign(can_be_null)||to_sign(is_required)||to_sign(is_repeated) AS TNRR,o.label,dump_value(def) AS def
 FROM        prop    p
 LEFT JOIN   obj     o ON o.obj_id=p.obj_id
