@@ -180,6 +180,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2numeric (a text) RETURNS numeric AS $$
+BEGIN
+    BEGIN
+        RETURN a::numeric;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2timestamp (a text) RETURNS timestamp AS $$
 BEGIN
     BEGIN
@@ -734,10 +743,10 @@ $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 ----------------------------
 -- GET/SET OBJECT CREATE/UPDATE TIME
 ----------------------------
-CREATE OR REPLACE FUNCTION obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
     SELECT create_time FROM obj WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION obj_update_time (a_obj_id integer) RETURNS timestamp AS $$
+CREATE OR REPLACE FUNCTION get_obj_update_time (a_obj_id integer) RETURNS timestamp AS $$
     SELECT update_time FROM obj WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_obj_create_time (a_obj_id integer,a_create_time timestamp) RETURNS void AS $$
@@ -871,7 +880,7 @@ $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 ----------------------------
 -- XXX NOTICE: top_ref_id('class') = 1
 CREATE OR REPLACE FUNCTION class_id (text) RETURNS integer AS $$
-    SELECT CASE WHEN $1='class' THEN 1 ELSE ref_id($1,1) END;
+    SELECT CASE WHEN $1='class' THEN 1 ELSE sub_ref_id($1,1) END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION class_id (text,text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('class',$1);
