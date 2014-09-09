@@ -1781,4 +1781,19 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION pg_typename (a_oid integer) RETURNS name AS $$
     SELECT typname FROM pg_type WHERE oid=$1;
 $$ LANGUAGE sql STABLE STRICT;
-
+---------------------------
+--UTILS
+---------------------------
+CREATE OR REPLACE FUNCTION lock_table(a_table text,a_chek BOOLEAN, a_mode text) RETURNS BOOLEAN AS
+$$
+    BEGIN
+    IF (a_chek)
+      THEN
+            a_mode = coalesce(a_mode,' IN SHARE UPDATE EXCLUSIVE MODE ');
+            execute 'LOCK TABLE '|| a_table || ' ' || a_mode ;
+           RETURN TRUE;
+      END IF;
+      RETURN false;
+  end; 
+$$
+LANGUAGE plpgsql VOLATILE STRICT;
