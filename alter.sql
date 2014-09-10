@@ -97,6 +97,5 @@ ALTER TABLE ONLY status             ADD CONSTRAINT status_type_id_fkey          
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        status_object_id_idx                                ON status (object_id);
 CREATE INDEX                        status_subject_id_idx                               ON status (subject_id) WHERE subject_id is null;
-CREATE INDEX                        status_type_id_idx                                  ON status (type_id);
 CREATE INDEX                        status_time_idx                                     ON status (time);
 
