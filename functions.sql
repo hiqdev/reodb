@@ -141,10 +141,31 @@ CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
     SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
 $$ LANGUAGE sql VOLATILE STRICT;
 
+--- IP2INT & INT2IP functions
+CREATE OR REPLACE FUNCTION ip2int (a text) RETURNS integer AS $$
+BEGIN
+    BEGIN
+        RETURN a::inet-'0.0.0.0'::inet;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ip2int (a inet) RETURNS integer AS $$
+BEGIN
+    BEGIN
+        RETURN a-'0.0.0.0'::inet;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION int2ip (a integer) RETURNS inet AS $$
+    SELECT '0.0.0.0'::inet+$1;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
 -- STR2something
 CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
-DECLARE
-    r inet;
 BEGIN
     BEGIN
         RETURN a::inet;
