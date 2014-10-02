@@ -171,6 +171,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2integers (a text) RETURNS integer[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::integer[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2double (a text) RETURNS double precision AS $$
 BEGIN
     BEGIN
@@ -1676,18 +1685,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
+CREATE OR REPLACE FUNCTION add_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+    WITH r AS (
+        INSERT INTO tie (src_id,tag_id,dst_id)
+        SELECT $1,$2,unnest($3)
+        RETURNING id
+    )
+    SELECT max(r.id) FROM r;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION del_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+    WITH r AS (
+        DELETE FROM tie WHERE src_id=$1 AND tag_id=$2 AND dst_id=ANY($3) RETURNING id
+    )
+    SELECT max(r.id) FROM r;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
-DECLARE
-    d integer;
-    res integer;
-BEGIN
-    DELETE FROM tie WHERE src_id=a_src_id AND tag_id=a_tag_id;
-    FOREACH d IN ARRAY a_dst_ids LOOP
-        INSERT INTO tie (src_id,tag_id,dst_id) VALUES (a_src_id,a_tag_id,d) RETURNING id INTO res;
-    END LOOP;
-    RETURN res;
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+    DELETE FROM tie WHERE src_id=$1 AND tag_id=$2;
+    SELECT add_ties($1,$2,$3);
+$$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- OBJECT
