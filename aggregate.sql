@@ -138,6 +138,33 @@ CREATE AGGREGATE last (integer,text) (
         FINALFUNC = last_final
 );
 
+-- FIRST/LAST integer,boolean
+CREATE TYPE integer_boolean AS (k integer,v boolean);
+
+CREATE OR REPLACE FUNCTION first_state (state integer_boolean,k integer,v boolean) RETURNS integer_boolean AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::integer_boolean ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION first_final (state integer_boolean) RETURNS boolean AS $$
+    SELECT $1.v;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE AGGREGATE first (integer,boolean) (
+        STYPE = integer_boolean,
+        SFUNC = first_state,
+        FINALFUNC = first_final
+);
+
+CREATE OR REPLACE FUNCTION last_state (state integer_boolean,k integer,v boolean) RETURNS integer_boolean AS $$
+        SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::integer_boolean ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION last_final (state integer_boolean) RETURNS boolean AS $$
+    SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE last (integer,boolean) (
+        STYPE = integer_boolean,
+        SFUNC = last_state,
+        FINALFUNC = last_final
+);
+
 -- FIRST/LAST timestamp,integer
 CREATE TYPE timestamp_integer AS (k timestamp,v integer);
 
