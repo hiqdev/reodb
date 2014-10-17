@@ -711,7 +711,12 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-
+ CREATE OR REPLACE FUNCTION get_obj_label (a_obj_id integer)  RETURNS text AS $$
+        select label from obj where obj_id = $1;
+ $$ LANGUAGE sql STABLE STRICT;
+  CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS text AS $$
+        select create_time from obj where obj_id = $1;
+ $$ LANGUAGE sql STABLE STRICT;
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
 ----------------------------
