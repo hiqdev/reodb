@@ -752,12 +752,15 @@ END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_label (a_obj_id integer)       RETURNS text  AS $$
       SELECT label FROM obj WHERE obj_id = $1; $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS text  AS $$
+CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
       SELECT create_time FROM obj WHERE obj_id = $1;  $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS text  AS $$
-      SELECT create_time FROM obj WHERE obj_id = $1; $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_obj_label_descr (a_obj_id integer) RETURNS setof AS $$
-      SELECT create_time FROM obj WHERE obj_id = $1; $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_label_descr (a_obj_id integer, OUT label text, OUT descr text ) RETURNS SETOF record AS $$
+BEGIN
+      RETURN QUERY
+      SELECT o.label,o.descr
+      FROM obj AS o 
+      WHERE o.obj_id = a_obj_id; 
+END; $$ LANGUAGE plpgsql STABLE STRICT;
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
 ----------------------------
