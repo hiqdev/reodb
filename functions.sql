@@ -63,8 +63,12 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
         CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
         CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-
--- CJOIN
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value macaddr, old macaddr) AS $$
+    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+        CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
+        CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+-- CJOINi
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
     SELECT array_to_string($1,',');
 $$ LANGUAGE sql IMMUTABLE STRICT;
