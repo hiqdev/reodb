@@ -1011,7 +1011,7 @@ CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS tim
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION is_status (a_obj_id integer,a_type text) RETURNS boolean AS $$
     SELECT time IS NOT NULL FROM status WHERE object_id=$1 AND type_id=status_id($2);
-$$ LANGUAGE sql VOLATILE STRICT;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type text,a_period interval) RETURNS boolean AS $$
     SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3);
 $$ LANGUAGE sql VOLATILE STRICT;
