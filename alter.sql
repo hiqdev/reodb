@@ -33,14 +33,13 @@ ALTER TABLE ONLY prop               ADD CONSTRAINT prop_type_id_fkey            
 CREATE INDEX                        prop_class_id_idx                                   ON prop (class_id);
 
 -- VALUE
-ALTER TABLE ONLY value              ADD CONSTRAINT value_no_obj_id_prop_id_uniq         UNIQUE (no,obj_id,prop_id);
+ALTER TABLE ONLY value              ADD CONSTRAINT value_no_obj_id_prop_id_uniq         UNIQUE (obj_id,prop_id,no);
 ALTER TABLE ONLY value              ADD CONSTRAINT value_obj_id_fkey                    FOREIGN KEY (obj_id)    REFERENCES obj (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 ALTER TABLE ONLY value              ADD CONSTRAINT value_prop_id_fkey                   FOREIGN KEY (prop_id)   REFERENCES prop (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 --- XXX doesn't work
 --- CREATE INDEX                        value_value_idx                                     ON value (value);
-CREATE INDEX                        value_obj_id_idx                                    ON value (obj_id);
 CREATE INDEX                        value_prop_id_idx                                   ON value (prop_id);
 
 -- USER VALUE
@@ -97,7 +96,6 @@ ALTER TABLE ONLY status             ADD CONSTRAINT status_subject_id_fkey       
 ALTER TABLE ONLY status             ADD CONSTRAINT status_type_id_fkey                  FOREIGN KEY (type_id)   REFERENCES ref (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        status_object_id_idx                                ON status (object_id);
-CREATE INDEX                        status_subject_id_idx                               ON status (subject_id);
-CREATE INDEX                        status_type_id_idx                                  ON status (type_id);
+CREATE INDEX                        status_subject_id_idx                               ON status (subject_id) WHERE subject_id is null;
 CREATE INDEX                        status_time_idx                                     ON status (time);
 

@@ -63,8 +63,12 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
         CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
         CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-
--- CJOIN
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value macaddr, old macaddr) AS $$
+    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+        CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
+        CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+-- CJOINi
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
     SELECT array_to_string($1,',');
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -192,6 +196,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2integers (a text) RETURNS integer[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::integer[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2double (a text) RETURNS double precision AS $$
 BEGIN
     BEGIN
@@ -283,6 +296,14 @@ BEGIN
             -- do nothing
     END;
     RETURN t;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2macaddr(a text) RETURNS MACADDR AS
+$$
+BEGIN
+    RETURN a::MACADDR;
+    EXCEPTION WHEN OTHERS THEN
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION smart_str2num (aa text) RETURNS numeric AS $$
@@ -741,7 +762,17 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-
+CREATE OR REPLACE FUNCTION get_obj_label (a_obj_id integer)       RETURNS text  AS $$
+      SELECT label FROM obj WHERE obj_id = $1; $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
+      SELECT create_time FROM obj WHERE obj_id = $1;  $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_label_descr (a_obj_id integer, OUT label text, OUT descr text ) RETURNS SETOF record AS $$
+BEGIN
+      RETURN QUERY
+      SELECT o.label,o.descr
+      FROM obj AS o 
+      WHERE o.obj_id = a_obj_id; 
+END; $$ LANGUAGE plpgsql STABLE STRICT;
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
 ----------------------------
@@ -1697,18 +1728,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
+CREATE OR REPLACE FUNCTION add_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+    WITH r AS (
+        INSERT INTO tie (src_id,tag_id,dst_id)
+        SELECT $1,$2,unnest($3)
+        RETURNING id
+    )
+    SELECT max(r.id) FROM r;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION del_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+    WITH r AS (
+        DELETE FROM tie WHERE src_id=$1 AND tag_id=$2 AND dst_id=ANY($3) RETURNING id
+    )
+    SELECT max(r.id) FROM r;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
-DECLARE
-    d integer;
-    res integer;
-BEGIN
-    DELETE FROM tie WHERE src_id=a_src_id AND tag_id=a_tag_id;
-    FOREACH d IN ARRAY a_dst_ids LOOP
-        INSERT INTO tie (src_id,tag_id,dst_id) VALUES (a_src_id,a_tag_id,d) RETURNING id INTO res;
-    END LOOP;
-    RETURN res;
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+    DELETE FROM tie WHERE src_id=$1 AND tag_id=$2;
+    SELECT add_ties($1,$2,$3);
+$$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
 -- OBJECT
@@ -1812,4 +1849,19 @@ $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION pg_typename (a_oid integer) RETURNS name AS $$
     SELECT typname FROM pg_type WHERE oid=$1;
 $$ LANGUAGE sql STABLE STRICT;
-
+---------------------------
+--UTILS
+---------------------------
+CREATE OR REPLACE FUNCTION lock_table(a_table text,a_chek BOOLEAN, a_mode text) RETURNS BOOLEAN AS
+$$
+    BEGIN
+    IF (a_chek)
+      THEN
+            a_mode = coalesce(a_mode,' IN SHARE UPDATE EXCLUSIVE MODE ');
+            execute 'LOCK TABLE '|| a_table || ' ' || a_mode ;
+           RETURN TRUE;
+      END IF;
+      RETURN false;
+  end; 
+$$
+LANGUAGE plpgsql VOLATILE STRICT;
