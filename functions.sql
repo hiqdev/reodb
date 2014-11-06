@@ -710,6 +710,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_sign (integer) RETURNS text AS $$
     SELECT CASE WHEN $1<0 THEN '-' ELSE '+' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_plus (boolean) RETURNS text AS $$
+    SELECT CASE WHEN $1 THEN '+' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- COMPARE
@@ -762,10 +765,12 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
-CREATE OR REPLACE FUNCTION get_obj_label (a_obj_id integer)       RETURNS text  AS $$
-      SELECT label FROM obj WHERE obj_id = $1; $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_label (a_obj_id integer) RETURNS text AS $$
+      SELECT label FROM obj WHERE obj_id = $1;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_create_time (a_obj_id integer) RETURNS timestamp AS $$
-      SELECT create_time FROM obj WHERE obj_id = $1;  $$ LANGUAGE sql STABLE STRICT;
+      SELECT create_time FROM obj WHERE obj_id = $1;
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_label_descr (a_obj_id integer, OUT label text, OUT descr text ) RETURNS SETOF record AS $$
 BEGIN
       RETURN QUERY
