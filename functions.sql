@@ -71,6 +71,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[],a_delimiter text) RETURNS text AS $$
 	SELECT array_to_string($1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION join (a_strs text[],a_delimiter text) RETURNS text AS $$
+	SELECT array_to_string($1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- LANG
 CREATE OR REPLACE FUNCTION unlang (a_str text) RETURNS text AS $$
@@ -90,6 +93,9 @@ END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -- DIFF
+CREATE OR REPLACE FUNCTION shorten (a text,n integer) RETURNS text AS $$
+	SELECT CASE WHEN length($1)>$2 THEN substr($1,1,$2)||'...' ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
 	SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
@@ -222,6 +228,10 @@ BEGIN
 	RETURN str2time(rr);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION ahrefify (a_txt text) RETURNS text AS $$
+	SELECT regexp_replace($1,E'(https?://\\S+)',E'<a href="\\1">\\1</a>','g');
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 -- CHECK EMAIL
 CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
@@ -698,6 +708,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF integer AS $$
 	SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS SETOF integer AS $$
+	SELECT obj_id FROM type WHERE _id=ref_id($1) AND name=ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids_agg (a_parent text,a_names text[]) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM type WHERE _id=ref_id($1) AND name=ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
 	SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
@@ -717,16 +733,16 @@ CREATE OR REPLACE FUNCTION ref_full_name (a_parent_id integer,a_obj_id integer) 
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text,a_descr text) RETURNS integer AS $$
 DECLARE
-	the_id	integer := ref_id(a_ref);
+	the_id	integer := type_id(a_ref);
 	pos	integer;
 BEGIN
 	IF the_id IS NULL THEN
 		pos	:= last_strpos(a_ref,',');
-		INSERT INTO ref (obj_id,_id,name,no,label,descr)
-		VALUES (the_id,ref_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no,a_label,a_descr)
+		INSERT INTO type (obj_id,_id,name,no,label,descr)
+		VALUES (the_id,type_id(substr(a_ref,0,pos)),substr(a_ref,pos+1),a_no,a_label,a_descr)
 		RETURNING obj_id INTO the_id;
 	ELSE
-		UPDATE ref SET no=a_no,label=a_label,descr=a_descr
+		UPDATE type SET no=a_no,label=a_label,descr=a_descr
 		WHERE obj_id=the_id;
 	END IF;
 	PERFORM set_obj_label(the_id,a_label,a_descr);
@@ -810,6 +826,15 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
 	SELECT ref_full_name($1,top_ref_id('state'));
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $$
+	SELECT		s.type_id
+	FROM		status		s
+	JOIN		ref		t ON t.obj_id=s.type_id AND s.object_id=$1
+	JOIN		ref		y ON y.obj_id=t._id AND y._id=top_type_id('state')
+	ORDER BY	s.time DESC
+	LIMIT		1
+	OFFSET		1;
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATUS
@@ -843,48 +868,49 @@ CREATE OR REPLACE FUNCTION check_status (a_obj_id integer,a_type text,a_period i
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_subject_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 DECLARE
-	the_id		integer;
-	the_time	timestamp;
-	b_time		timestamp := coalesce(a_time,now());
+	z_id	integer;
+	z_time	timestamp;
+	b_time	timestamp := coalesce(a_time,now());
 BEGIN
-	SELECT INTO the_id,the_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
-	IF the_id IS NULL THEN
+	SELECT INTO z_id,z_time id,time FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
+	IF z_id IS NULL THEN
 		INSERT INTO status (object_id,subject_id,type_id,time)
-		VALUES (a_obj_id,a_subject_id,a_type_id,b_time) RETURNING id INTO the_id;
-	ELSIF the_time!=a_time THEN
-		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=a_time WHERE id=the_id;
+		VALUES (a_obj_id,a_subject_id,a_type_id,b_time) RETURNING id INTO z_id;
+	ELSIF z_time!=b_time THEN
+		UPDATE status SET subject_id=coalesce(a_subject_id,subject_id),time=b_time WHERE id=z_id;
 	END IF;
-	RETURN the_id;
+	RETURN z_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer,a_time timestamp) RETURNS integer AS $$
 	SELECT set_status($1,NULL,$2,$3);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer,a_time timestamp with time zone) RETURNS integer AS $$
-	SELECT set_status($1,$2,$3::timestamp);
+	SELECT set_status($1,NULL,$2,$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp) RETURNS integer AS $$
-	SELECT set_status($1,status_id($2),$3);
+	SELECT set_status($1,NULL,status_id($2),$3);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp with time zone) RETURNS integer AS $$
-	SELECT set_status($1,status_id($2),$3::timestamp);
+	SELECT set_status($1,NULL,status_id($2),$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
--- XXX important: this function does NOT change time of the status if it already exists
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
+	SELECT set_status($1,NULL,$2,NULL);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text) RETURNS integer AS $$
+	SELECT set_status($1,NULL,status_id($2),NULL);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION add_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
 DECLARE
-	a_type_id	integer := status_id(a_type);
-	the_id		integer;
+	z_id		integer;
 BEGIN
-	SELECT INTO the_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
-	IF the_id IS NULL THEN
-		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO the_id;
+	SELECT INTO z_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
+	IF z_id IS NULL THEN
+		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO z_id;
 	END IF;
-	RETURN the_id;
+	RETURN z_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION reset_status (a_obj_id integer,a_type text) RETURNS integer AS $$
-	SELECT set_status($1,status_id($2),now());
-$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION del_status (a_obj_id integer,a_type text) RETURNS void AS $$
 	DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -1170,18 +1196,21 @@ CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop_id integer,a_value
 DECLARE
 	the_id	integer;
 	the_def	text;
+	the_value text;
 BEGIN
 	IF a_value IS NULL THEN
 		DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id;
 	ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) AND EXISTS (SELECT 1 FROM prop WHERE obj_id=a_prop_id) THEN
-		SELECT INTO the_id id FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
+		SELECT INTO the_id,the_value id,value FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
 		SELECT INTO the_def def FROM prop WHERE obj_id=a_prop_id;
 		IF the_def=a_value THEN
 			IF the_id IS NOT NULL THEN
 				DELETE FROM value WHERE id=the_id;
 			END IF;
 		ELSIF the_id IS NOT NULL THEN
-			UPDATE value SET value=a_value WHERE id=the_id;
+			IF the_value!=a_value THEN
+				UPDATE value SET value=a_value WHERE id=the_id;
+			END IF;
 		ELSE
 			INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
 			RETURNING id INTO the_id;
