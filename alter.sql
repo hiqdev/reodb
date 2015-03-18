@@ -14,6 +14,7 @@ ALTER TABLE ONLY blacklist	ADD CONSTRAINT blacklist_obj_id_pkey		PRIMARY KEY (ob
 ALTER TABLE ONLY obj		ADD CONSTRAINT obj_class_id_fkey		FOREIGN KEY (class_id)	REFERENCES ref (obj_id)
 										ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX			obj_class_id_idx				ON obj (class_id);
+CREATE INDEX			obj_client_id_idx				ON obj (client_id);
 
 -- REF
 ALTER TABLE ONLY ref		ADD CONSTRAINT ref_name__id_uniq		UNIQUE (name,_id);
