@@ -118,7 +118,7 @@ CREATE OR REPLACE FUNCTION first_state (state integer_text,k integer,v text) RET
         SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::integer_text ELSE $1 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION first_final (state integer_text) RETURNS text AS $$
-    SELECT $1.v;
+	SELECT $1.v;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE AGGREGATE first (integer,text) (
         STYPE = integer_text,
@@ -127,10 +127,10 @@ CREATE AGGREGATE first (integer,text) (
 );
 
 CREATE OR REPLACE FUNCTION last_state (state integer_text,k integer,v text) RETURNS integer_text AS $$
-        SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::integer_text ELSE $1 END;
+        SELECT CASE WHEN $1 IS NULL OR ($3 IS NOT NULL AND $2>$1.k) THEN ($2,$3)::integer_text ELSE $1 END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION last_final (state integer_text) RETURNS text AS $$
-    SELECT $1.v;
+	SELECT $1.v;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE AGGREGATE last (integer,text) (
         STYPE = integer_text,
