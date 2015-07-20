@@ -326,10 +326,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
--- CHECK EMAIL
+-- EMAIL
 CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
     SELECT $1~*'^[a-z0-9_.+-]+@[a-z0-9.-]+$';
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION email_hash (a_email text) RETURNS text AS $$
+    SELECT md5(lower(trim($1)));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- SPLIT
 CREATE OR REPLACE FUNCTION split (a text,sym text) RETURNS text[] AS $$
