@@ -7,6 +7,7 @@ ALTER TABLE ONLY prop               ADD CONSTRAINT prop_obj_id_pkey             
 ALTER TABLE ONLY value              ADD CONSTRAINT value_id_pkey                        PRIMARY KEY (id);
 ALTER TABLE ONLY user_value         ADD CONSTRAINT user_value_id_pkey                   PRIMARY KEY (id);
 ALTER TABLE ONLY tag                ADD CONSTRAINT tag_id_pkey                          PRIMARY KEY (id);
+ALTER TABLE ONLY tie                ADD CONSTRAINT tie_id_pkey                          PRIMARY KEY (id);
 ALTER TABLE ONLY link               ADD CONSTRAINT link_obj_id_pkey                     PRIMARY KEY (obj_id);
 
 -- OBJ
