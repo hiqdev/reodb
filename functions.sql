@@ -89,6 +89,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[],a_delimiter text) RETURNS text AS $$
     SELECT array_to_string($1,$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION join (a_strs text[],a_delimiter text) RETURNS text AS $$
+	SELECT array_to_string($1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 --- STRING functions
 CREATE OR REPLACE FUNCTION collapse_spaces (a text) RETURNS text AS $$
@@ -113,6 +116,9 @@ END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -- DIFF
+CREATE OR REPLACE FUNCTION shorten (a text,n integer) RETURNS text AS $$
+	SELECT CASE WHEN length($1)>$2 THEN substr($1,1,$2)||'...' ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
     SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
@@ -352,10 +358,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
--- CHECK EMAIL
+CREATE OR REPLACE FUNCTION ahrefify (a_txt text) RETURNS text AS $$
+	SELECT regexp_replace($1,E'(https?://\\S+)',E'<a href="\\1">\\1</a>','g');
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+
+-- EMAIL
 CREATE OR REPLACE FUNCTION is_email (a_email text) RETURNS boolean AS $$
     SELECT $1~*'^[a-z0-9_.+-]+@[a-z0-9.-]+$';
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION email_hash (a_email text) RETURNS text AS $$
+    SELECT md5(lower(trim($1)));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- SPLIT
 CREATE OR REPLACE FUNCTION split (a text,sym text) RETURNS text[] AS $$
@@ -941,6 +954,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF integer AS $$
     SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS SETOF integer AS $$
+	SELECT obj_id FROM type WHERE _id=ref_id($1) AND name=ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_ids_agg (a_parent text,a_names text[]) RETURNS integer[] AS $$
+	SELECT array_agg(obj_id) FROM type WHERE _id=ref_id($1) AND name=ANY($2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
     SELECT name FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
@@ -1071,6 +1090,15 @@ CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $
     LIMIT       1
     OFFSET      1;
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $$
+	SELECT		s.type_id
+	FROM		status		s
+	JOIN		ref		t ON t.obj_id=s.type_id AND s.object_id=$1
+	JOIN		ref		y ON y.obj_id=t._id AND y._id=top_type_id('state')
+	ORDER BY	s.time DESC
+	LIMIT		1
+	OFFSET		1;
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATUS
@@ -1134,12 +1162,26 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text,a_time timestamp with time zone) RETURNS integer AS $$
     SELECT set_status($1,status_id($2),$3::timestamp);
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
+	SELECT set_status($1,NULL,$2,NULL);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type text) RETURNS integer AS $$
     SELECT set_status($1,status_id($2),now());
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION reset_status (a_obj_id integer,a_type text) RETURNS integer AS $$
     SELECT set_status($1,status_id($2),now());
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION add_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
+DECLARE
+	z_id		integer;
+BEGIN
+	SELECT INTO z_id id FROM status WHERE object_id=a_obj_id AND type_id=a_type_id;
+	IF z_id IS NULL THEN
+		INSERT INTO status (object_id,type_id) VALUES (a_obj_id,a_type_id) RETURNING id INTO z_id;
+	END IF;
+	RETURN z_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION del_status (a_obj_id integer,a_type text) RETURNS void AS $$
     DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
@@ -1415,24 +1457,24 @@ DECLARE
     the_value   text;
 BEGIN
     IF a_value IS NULL THEN
-        DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id;
+		DELETE FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id;
     ELSIF EXISTS (SELECT 1 FROM obj WHERE obj_id=a_obj_id) AND EXISTS (SELECT 1 FROM prop WHERE obj_id=a_prop_id) THEN
-        SELECT INTO the_id,the_value id,value FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
+		SELECT INTO the_id,the_value id,value FROM value WHERE obj_id=a_obj_id AND prop_id=a_prop_id ORDER BY no ASC LIMIT 1;
         SELECT INTO the_def def FROM prop WHERE obj_id=a_prop_id;
-        IF the_def=a_value THEN
+		IF the_def=a_value THEN
             IF the_id IS NOT NULL THEN
-                DELETE FROM value WHERE id=the_id;
-            END IF;
-        ELSIF the_id IS NOT NULL THEN
-            IF the_value!=a_value THEN
-                UPDATE value SET value=a_value WHERE id=the_id;
-            END IF;
-        ELSE
-            INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
-            RETURNING id INTO the_id;
-        END IF;
-    END IF;
-    RETURN the_id;
+				DELETE FROM value WHERE id=the_id;
+			END IF;
+		ELSIF the_id IS NOT NULL THEN
+			IF the_value!=a_value THEN
+				UPDATE value SET value=a_value WHERE id=the_id;
+			END IF;
+		ELSE
+			INSERT INTO value (obj_id,prop_id,value) VALUES (a_obj_id,a_prop_id,a_value)
+			RETURNING id INTO the_id;
+		END IF;
+	END IF;
+	RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$

@@ -161,6 +161,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- REF
+CREATE OR REPLACE FUNCTION ref_after_change_trigger () RETURNS "trigger" AS $$
+BEGIN
+	IF TG_OP='INSERT' OR NEW.label!=OLD.label OR NEW.descr!=OLD.descr THEN
+		UPDATE obj SET label=NEW.label,descr=NEW.descr WHERE obj_id=NEW.obj_id;
+	END IF;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- NON OBJ
 CREATE OR REPLACE FUNCTION before_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
@@ -243,6 +253,7 @@ CREATE TRIGGER update_time_trigger                  BEFORE  UPDATE  ON obj      
 CREATE TRIGGER obj_before_delete_trigger            BEFORE  DELETE  ON obj          FOR EACH ROW EXECUTE PROCEDURE obj_before_delete_trigger();
 
 -- REF
+CREATE TRIGGER ref_after_change_trigger             AFTER INSERT OR UPDATE ON type  FOR EACH ROW EXECUTE PROCEDURE ref_after_change_trigger();
 CREATE TRIGGER odb_before_insert_trigger            BEFORE  INSERT  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_before_insert_trigger();
 CREATE TRIGGER odb_after_update_trigger             AFTER   UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
 CREATE TRIGGER odb_before_delete_trigger            BEFORE  DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_before_delete_trigger();
