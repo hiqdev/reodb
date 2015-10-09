@@ -5,6 +5,7 @@ ALTER TABLE ONLY obj                ADD CONSTRAINT obj_obj_id_pkey              
 ALTER TABLE ONLY ref                ADD CONSTRAINT ref_obj_id_pkey                      PRIMARY KEY (obj_id);
 ALTER TABLE ONLY prop               ADD CONSTRAINT prop_obj_id_pkey                     PRIMARY KEY (obj_id);
 ALTER TABLE ONLY value              ADD CONSTRAINT value_id_pkey                        PRIMARY KEY (id);
+ALTER TABLE ONLY integer_value      ADD CONSTRAINT integer_value_id_pkey                PRIMARY KEY (id);
 ALTER TABLE ONLY user_value         ADD CONSTRAINT user_value_id_pkey                   PRIMARY KEY (id);
 ALTER TABLE ONLY tag                ADD CONSTRAINT tag_id_pkey                          PRIMARY KEY (id);
 ALTER TABLE ONLY link               ADD CONSTRAINT link_obj_id_pkey                     PRIMARY KEY (obj_id);
@@ -42,6 +43,15 @@ ALTER TABLE ONLY value              ADD CONSTRAINT value_prop_id_fkey           
 --- XXX doesn't work
 --- CREATE INDEX                        value_value_idx                                     ON value (value);
 CREATE INDEX                        value_prop_id_idx                                   ON value (prop_id);
+
+--- integer_value
+ALTER TABLE ONLY integer_value      ADD CONSTRAINT integer_value_no_obj_id_prop_id_uniq UNIQUE (obj_id,prop_id,no);
+ALTER TABLE ONLY integer_value      ADD CONSTRAINT integer_value_obj_id_fkey            FOREIGN KEY (obj_id)    REFERENCES obj (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY integer_value      ADD CONSTRAINT integer_value_prop_id_fkey           FOREIGN KEY (prop_id)   REFERENCES prop (obj_id)
+                                                                                        ON UPDATE CASCADE ON DELETE RESTRICT;
+CREATE INDEX                        integer_value_value_idx                             ON integer_value (value);
+CREATE INDEX                        integer_value_prop_id_idx                           ON integer_value (prop_id);
 
 -- USER VALUE
 ALTER TABLE ONLY user_value         ADD CONSTRAINT user_value_no_obj_id_user_id_prop_id_uniq UNIQUE (no,obj_id,user_id,prop_id);
