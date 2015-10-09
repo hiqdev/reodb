@@ -234,6 +234,24 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2bigint (a text) RETURNS bigint AS $$
+BEGIN
+    BEGIN
+        RETURN a::bigint;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2bigints (a text) RETURNS bigint[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::bigint[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2double (a text) RETURNS double precision AS $$
 BEGIN
     BEGIN
