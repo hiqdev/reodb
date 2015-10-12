@@ -216,6 +216,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+--- INTEGER_VALUE
+CREATE OR REPLACE FUNCTION integer_value_before_insert_trigger () RETURNS "trigger" AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM integer_value WHERE obj_id=NEW.obj_id AND prop_id=NEW.prop_id AND no=NEW.no) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- TAG
 CREATE OR REPLACE FUNCTION tag_before_insert_trigger () RETURNS "trigger" AS $$
 BEGIN
@@ -268,6 +278,9 @@ CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON prop     
 -- VALUE
 CREATE TRIGGER value_before_insert_trigger          BEFORE  INSERT  ON value        FOR EACH ROW EXECUTE PROCEDURE value_before_insert_trigger();
 CREATE TRIGGER value_after_change_trigger AFTER INSERT OR UPDATE OR DELETE ON value FOR EACH ROW EXECUTE PROCEDURE value_after_change_trigger();
+
+--- INTEGER_VALUE
+CREATE TRIGGER integer_value_before_insert_trigger  BEFORE  INSERT  ON integer_value FOR EACH ROW EXECUTE PROCEDURE integer_value_before_insert_trigger();
 
 -- TAG
 CREATE TRIGGER tag_before_insert_trigger            BEFORE  INSERT  ON tag          FOR EACH ROW EXECUTE PROCEDURE tag_before_insert_trigger();

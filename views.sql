@@ -7,6 +7,9 @@ CREATE OR REPLACE VIEW obj_h AS
 ;
 
 -- REF
+CREATE OR REPLACE VIEW zref AS
+    SELECT * FROM ref
+;
 CREATE OR REPLACE VIEW ref_h AS
     SELECT      obj_id,_id,no,ref_full_name(obj_id) AS name,r.label
     FROM        ref r
