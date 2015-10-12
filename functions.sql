@@ -109,22 +109,28 @@ CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
     SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text) RETURNS text AS $$
-    SELECT  CASE WHEN $1!='' THEN $1 ELSE
-        CASE WHEN $2!='' THEN $2 ELSE $3
-    END END;
+    SELECT CASE
+        WHEN $1!='' THEN $1
+        WHEN $2!='' THEN $2
+        ELSE $3
+    END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text,a_4 text) RETURNS text AS $$
-    SELECT  CASE WHEN $1!='' THEN $1 ELSE
-        CASE WHEN $2!='' THEN $2 ELSE
-        CASE WHEN $3!='' THEN $3 ELSE $4
-    END END END;
+    SELECT CASE
+        WHEN $1!='' THEN $1
+        WHEN $2!='' THEN $2
+        WHEN $3!='' THEN $3
+        ELSE $4
+    END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text,a_3 text,a_4 text,a_5 text) RETURNS text AS $$
-    SELECT  CASE WHEN $1!='' THEN $1 ELSE
-        CASE WHEN $2!='' THEN $2 ELSE
-        CASE WHEN $3!='' THEN $3 ELSE
-        CASE WHEN $4!='' THEN $4 ELSE $5
-    END END END END;
+    SELECT CASE
+        WHEN $1!='' THEN $1
+        WHEN $2!='' THEN $2
+        WHEN $3!='' THEN $3
+        WHEN $4!='' THEN $4
+        ELSE $5
+    END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION nonzero (a_1 integer,a_2 integer) RETURNS integer AS $$
     SELECT CASE WHEN $1>0 THEN $1 ELSE $2 END;
