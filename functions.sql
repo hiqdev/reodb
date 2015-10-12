@@ -68,7 +68,21 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
         CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
         CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
--- CJOINi
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value inet[],old inet[]) AS $$
+    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+            CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
+            CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+--- DEBUG
+CREATE OR REPLACE FUNCTION raise_notice (a text) RETURNS boolean AS $$
+BEGIN
+    RAISE NOTICE '%',a;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
+-- CJOIN
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
     SELECT array_to_string($1,',');
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -184,6 +198,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2inets (a text) RETURNS inet[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::inet[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2boolean (a text) RETURNS boolean AS $$
 BEGIN
     BEGIN
@@ -206,6 +229,24 @@ CREATE OR REPLACE FUNCTION str2integers (a text) RETURNS integer[] AS $$
 BEGIN
     BEGIN
         RETURN csplit(a)::integer[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2bigint (a text) RETURNS bigint AS $$
+BEGIN
+    BEGIN
+        RETURN a::bigint;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2bigints (a text) RETURNS bigint[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::bigint[];
     EXCEPTION WHEN OTHERS THEN
         RETURN NULL;
     END;
@@ -238,7 +279,7 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION str2interval (a text) RETURNS interval AS $$
+CREATE OR REPLACE FUNCTION _str2interval (a text) RETURNS interval AS $$
 BEGIN
     BEGIN
         RETURN a::interval;
@@ -247,6 +288,9 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2interval (a text) RETURNS interval AS $$
+    SELECT coalesce(_str2interval($1),_str2interval('1'||$1));
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- OLD STR2something
 CREATE OR REPLACE FUNCTION str2int (a text,def integer) RETURNS integer AS $$
@@ -523,6 +567,16 @@ CREATE OR REPLACE FUNCTION renew_expires (a_period interval,a_expires timestamp,
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
+-- PERIOD OPERATIONS
+----------------------------
+CREATE OR REPLACE FUNCTION period_from (a_init timestamp,a_period interval,a_now timestamp) RETURNS timestamp AS $$
+    SELECT $1+$2*floor(date_part('epoch',$3-$1)/date_part('epoch',$2));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION period_till (a_init timestamp,a_period interval,a_now timestamp) RETURNS timestamp AS $$
+    SELECT period_from($1,$2,$3)+$2;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
 -- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
 ----------------------------
 CREATE OR REPLACE FUNCTION to_second () RETURNS timestamp AS $$
@@ -712,6 +766,15 @@ CREATE OR REPLACE FUNCTION to_no (boolean) RETURNS text AS $$
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_yesno (boolean) RETURNS text AS $$
     SELECT CASE WHEN $1 THEN '{lang:Yes}' ELSE '{lang:No}' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_1 (boolean) RETURNS text AS $$
+    SELECT CASE WHEN $1 THEN '1' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_1 (text) RETURNS text AS $$
+    SELECT CASE WHEN $1!='' THEN '1' END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_1 (numeric) RETURNS text AS $$
+    SELECT CASE WHEN $1!=0 THEN '1' END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
@@ -1853,7 +1916,7 @@ CREATE OR REPLACE FUNCTION dump_value (a_value text) RETURNS text AS $$
     SELECT CASE WHEN $1~E'^\\d+$' AND EXISTS (SELECT 1 FROM obj WHERE obj_id=$1::integer) THEN get_obj_full_name($1::integer) ELSE $1 END
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
-    SELECT  cjoin(val)
+    SELECT  string_agg(val,',')
     FROM    (
         SELECT      c.name||':'||p.name||'="'||v.value||'"' AS val
         FROM        value       v
