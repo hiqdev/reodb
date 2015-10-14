@@ -3,9 +3,11 @@ hiqdev/reodb commits history
 
 ## Under development
 
-- Added hidev, README, CHANGELOG, LICENSE
+- Added packaging: hidev, README, CHANGELOG, LICENSE
+    - 6d3a5cc 2015-10-14 added packaging (sol@hiqdev.com)
     - bb793c7 2015-10-14 + hidev config (sol@hiqdev.com)
 - Added history
+    - 9ebe2a9 2015-10-14 retabed functions.sql (sol@hiqdev.com)
     - 1810fba 2015-10-12 redone prepare_replace functions without INOUT (sol@hiqdev.com)
     - 4bc7d54 2015-10-12 improved code style for nonempty() (sol@hiqdev.com)
     - 3e41575 2015-10-09 + integer_value (sol@hiqdev.com)
