@@ -4,6 +4,7 @@ hiqdev/reodb commits history
 ## Under development
 
 - Added packaging: hidev, README, CHANGELOG, LICENSE
+    - bec8b17 2015-10-14 improved readme (sol@hiqdev.com)
     - 6d3a5cc 2015-10-14 added packaging (sol@hiqdev.com)
     - bb793c7 2015-10-14 + hidev config (sol@hiqdev.com)
 - Fixed code styling
