@@ -1,3 +1,9 @@
+# hidev composer.json
+.hidev/composer.json
+.hidev/composer.lock
+.hidev/vendor
+
+# 
 .*.swp
 _all.sql
 _redo.sql
@@ -5,3 +11,12 @@ not
 err
 translit/translit.o
 translit/translit.so
+
+# IDE & OS files
+.idea
+nbproject
+.buildpath
+.project
+.settings
+Thumbs.db
+.DS_Store
