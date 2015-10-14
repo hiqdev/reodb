@@ -1,18 +1,10 @@
-# hidev composer.json
+# hidev internals
 .hidev/composer.json
 .hidev/composer.lock
 .hidev/vendor
 
-# 
-.*.swp
-_all.sql
-_redo.sql
-not
-err
-translit/translit.o
-translit/translit.so
-
 # IDE & OS files
+.*.swp
 .idea
 nbproject
 .buildpath
@@ -20,3 +12,11 @@ nbproject
 .settings
 Thumbs.db
 .DS_Store
+
+# intermediate files
+_all.sql
+_redo.sql
+not
+err
+translit/translit.o
+translit/translit.so
