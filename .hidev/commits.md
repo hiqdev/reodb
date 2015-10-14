@@ -3,18 +3,19 @@ hiqdev/reodb commits history
 
 ## Under development
 
-    - becb9c6 2015-10-14 removed translit junk (sol@hiqdev.com)
-- Added packaging: hidev, README, CHANGELOG, LICENSE
-    - bec8b17 2015-10-14 improved readme (sol@hiqdev.com)
-    - 6d3a5cc 2015-10-14 added packaging (sol@hiqdev.com)
-    - bb793c7 2015-10-14 + hidev config (sol@hiqdev.com)
 - Fixed code styling
+    - a3f1971 2015-10-14 moved to src & bin (sol@hiqdev.com)
+    - becb9c6 2015-10-14 removed translit junk (sol@hiqdev.com)
     - c2aa079 2015-10-14 - Lang (sol@hiqdev.com)
     - 88ac62d 2015-10-14 retabed (sol@hiqdev.com)
     - 8873506 2015-10-14 retabed (sol@hiqdev.com)
     - 9ebe2a9 2015-10-14 retabed functions.sql (sol@hiqdev.com)
     - 1810fba 2015-10-12 redone prepare_replace functions without INOUT (sol@hiqdev.com)
     - 4bc7d54 2015-10-12 improved code style for nonempty() (sol@hiqdev.com)
+- Added packaging: hidev, README, CHANGELOG, LICENSE
+    - bec8b17 2015-10-14 improved readme (sol@hiqdev.com)
+    - 6d3a5cc 2015-10-14 added packaging (sol@hiqdev.com)
+    - bb793c7 2015-10-14 + hidev config (sol@hiqdev.com)
 - Added history
     - 3e41575 2015-10-09 + integer_value (sol@hiqdev.com)
     - d4f59de 2015-10-09 + str2bigint/s (sol@hiqdev.com)
