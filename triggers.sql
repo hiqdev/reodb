@@ -164,10 +164,10 @@ $$ LANGUAGE plpgsql;
 -- REF
 CREATE OR REPLACE FUNCTION ref_after_change_trigger () RETURNS "trigger" AS $$
 BEGIN
-	IF TG_OP='INSERT' OR NEW.label!=OLD.label OR NEW.descr!=OLD.descr THEN
-		UPDATE obj SET label=NEW.label,descr=NEW.descr WHERE obj_id=NEW.obj_id;
-	END IF;
-	RETURN NEW;
+    IF TG_OP='INSERT' OR NEW.label!=OLD.label OR NEW.descr!=OLD.descr THEN
+        UPDATE obj SET label=NEW.label,descr=NEW.descr WHERE obj_id=NEW.obj_id;
+    END IF;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
