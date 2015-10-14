@@ -3,6 +3,7 @@ hiqdev/reodb commits history
 
 ## Under development
 
+    - becb9c6 2015-10-14 removed translit junk (sol@hiqdev.com)
 - Added packaging: hidev, README, CHANGELOG, LICENSE
     - bec8b17 2015-10-14 improved readme (sol@hiqdev.com)
     - 6d3a5cc 2015-10-14 added packaging (sol@hiqdev.com)
