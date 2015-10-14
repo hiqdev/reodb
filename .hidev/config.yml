@@ -1,0 +1,9 @@
+package:
+    name:           reodb
+    title:          Reusable objective database
+    type:           project
+    keywords:       SQL, EAV
+
+require:
+    hiqdev/hidev-config:        "*"
+    hiqdev/hidev-config-sql:    "*@dev"
