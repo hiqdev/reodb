@@ -146,7 +146,7 @@ $$ LANGUAGE plpgsql;
 -- OBJ
 CREATE OR REPLACE FUNCTION update_time_trigger () RETURNS "trigger" AS $$
 BEGIN
-    IF NEW.update_time=OLD.update_time THEN
+    IF NEW.update_time IS NOT DISTINCT FROM OLD.update_time THEN
         NEW.update_time := 'now';
     END IF;
     RETURN NEW;
