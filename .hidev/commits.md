@@ -4,7 +4,8 @@ hiqdev/reodb commits history
 ## Under development
 
 - Fixed code organization
-    - cea72f0 2015-11-18 improved package description (sol@hiqdev.com)
+    - 4a05785 2015-11-18 improved package description (sol@hiqdev.com)
+    - d3867de 2015-10-15 fixed update_time_trigger: used is not distinct from (sol@hiqdev.com)
     - a3f1971 2015-10-14 moved to src & bin (sol@hiqdev.com)
     - becb9c6 2015-10-14 removed translit junk (sol@hiqdev.com)
     - c2aa079 2015-10-14 - Lang (sol@hiqdev.com)
