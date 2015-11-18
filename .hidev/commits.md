@@ -3,7 +3,8 @@ hiqdev/reodb commits history
 
 ## Under development
 
-- Fixed code styling
+- Fixed code organization
+    - cea72f0 2015-11-18 improved package description (sol@hiqdev.com)
     - a3f1971 2015-10-14 moved to src & bin (sol@hiqdev.com)
     - becb9c6 2015-10-14 removed translit junk (sol@hiqdev.com)
     - c2aa079 2015-10-14 - Lang (sol@hiqdev.com)
@@ -57,7 +58,7 @@ hiqdev/reodb commits history
     - 2f39509 2014-05-19 * reodb_before_delete_trigger: delete temporary instanty (andrii.vasyliev@gmail.com)
     - c53c366 2014-05-19 + scalar,systempath (andrii.vasyliev@gmail.com)
     - 84204a3 2014-05-19 renamed get_obj_full/name <- obj_full/name (andrii.vasyliev@gmail.com)
-    - 54d2a8d 2014-05-19 fixed prepare_replace for inet + collapse_spaces + str2inet + today + get_obj_class/_id/state,state_id (andrii.vasyliev@gmail.com)
+    - 54d2a8d 2014-05-19 fixed prepare_replace for inet + collapse_spaces + str2inet + today + `get_obj_class/_id/state,state_id` (andrii.vasyliev@gmail.com)
     - decb0ab 2014-04-24 - blacklist/ed: moved to ahcore (andrii.vasyliev@gmail.com)
     - bd8848a 2014-04-24 + str2interval (andrii.vasyliev@gmail.com)
     - d22ab2a 2014-04-21 * change functions (andrii.vasyliev@gmail.com)
@@ -130,7 +131,7 @@ hiqdev/reodb commits history
     - ab8801f 2012-03-26 + class,param (andrii.vasyliev@gmail.com)
     - 1812287 2012-03-26 + get/check_status + param functions (andrii.vasyliev@gmail.com)
     - 2d04f79 2012-03-26 fixed status_type_id_object_id_uniq (andrii.vasyliev@gmail.com)
-    - 1c68ee5 2012-01-19 improved old_ table and trigger (andrii.vasyliev@gmail.com)
+    - 1c68ee5 2012-01-19 improved `old_` table and trigger (andrii.vasyliev@gmail.com)
     - d8275e1 2012-01-19 + str2inet (andrii.vasyliev@gmail.com)
     - aaba758 2011-12-21 * all IDs bigint -> integer + sequences (andrii.vasyliev@gmail.com)
     - f3b890e 2011-11-09 improved status (andrii.vasyliev@gmail.com)
@@ -144,7 +145,7 @@ hiqdev/reodb commits history
     - 80b8cfa 2011-06-02 * ref: + label,descr improved prop: trigger info moved from table to props (andrii.vasyliev@gmail.com)
     - 8c748e2 2010-11-23 many improvements about is_t/n/s/r -> is_in_table and so on (andrii.vasyliev@gmail.com)
     - c3fc18f 2010-10-14 ! * integer -> bigint: now do_all works witout errors (andrii.vasyliev@gmail.com)
-    - 6b57a34 2010-10-14 + ignore vim temporary files: .*.swp (andrii.vasyliev@gmail.com)
+    - 6b57a34 2010-10-14 + ignore vim temporary files: `.*.swp` (andrii.vasyliev@gmail.com)
     - 36b04c3 2010-10-13 ! * integer -> bigint + status (andrii.vasyliev@gmail.com)
     - 168902f 2010-10-13 + tag2,status (andrii.vasyliev@gmail.com)
     - 0ad38c8 2010-10-13 + domains (andrii.vasyliev@gmail.com)

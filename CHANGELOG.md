@@ -3,7 +3,7 @@ hiqdev/reodb changelog
 
 ## Under development
 
-- Fixed code styling
+- Fixed code organization
 - Added packaging: hidev, README, CHANGELOG, LICENSE
 - Added history
 
