@@ -584,6 +584,29 @@ CREATE OR REPLACE FUNCTION period_till (a_init timestamp,a_period interval,a_now
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
+--- INTERVAL TABLE
+----------------------------
+CREATE OR REPLACE FUNCTION interval_table(a_terms text[]) RETURNS TABLE (term text, since timestamp, till timestamp) AS $$
+BEGIN
+    RETURN QUERY
+        WITH iterms AS (
+            SELECT  unnest AS term, unnest::interval AS iterm
+            FROM    unnest(a_terms)
+        )
+        SELECT      t.term,
+                    now()::timestamp+coalesce(max(s.iterm), '0day'::interval) AS since,
+                    now()::timestamp+t.iterm AS till
+        FROM        iterms  t
+        LEFT JOIN   iterms  s ON s.iterm<t.iterm
+        GROUP BY    t.term,t.iterm
+        ORDER BY    t.iterm;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION interval_table(a_terms text) RETURNS TABLE (term text, since timestamp, till timestamp) AS $$
+    SELECT interval_table(string_to_array($1, ','));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+----------------------------
 -- TO SECOND/MINUTE/HOUR/DAY/MONTH/YEAR
 ----------------------------
 CREATE OR REPLACE FUNCTION to_second () RETURNS timestamp AS $$
@@ -1981,3 +2004,4 @@ BEGIN
     RETURN false;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+
