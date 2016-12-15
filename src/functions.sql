@@ -1235,7 +1235,7 @@ CREATE OR REPLACE FUNCTION del_status (a_obj_id integer,a_type text) RETURNS voi
     DELETE FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
 -- TODO redo this way: if current statuses differ from given then delete and insert else do nothing
-CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,a__id integer,statuses text[]) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,a__id integer,statuses text[],a_subject_id integer) RETURNS integer AS $$
 DECLARE
     row record;
     n_has   boolean;
@@ -1258,8 +1258,8 @@ BEGIN
         END IF;
     END LOOP;
     IF adds>'{}'::integer[] THEN
-        INSERT INTO status (object_id,type_id)
-        SELECT a_obj_id,obj_id FROM ref WHERE obj_id=ANY(adds);
+        INSERT INTO status (object_id,type_id,subject_id)
+        SELECT a_obj_id,obj_id,a_subject_id FROM ref WHERE obj_id=ANY(adds);
     END IF;
     IF dels>'{}'::integer[] THEN
         DELETE FROM status WHERE object_id=a_obj_id AND type_id=ANY(dels);
@@ -1267,6 +1267,9 @@ BEGIN
     RETURN a_obj_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,a__id integer,statuses text[]) RETURNS integer AS $$
+    SELECT set_statuses($1, $2, $3, null);
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text[]) RETURNS integer AS $$
     SELECT set_statuses($1,status_id($2),$3);
 $$ LANGUAGE sql VOLATILE STRICT;
