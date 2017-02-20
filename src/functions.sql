@@ -223,6 +223,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2smallint (a text) RETURNS smallint AS $$
+BEGIN
+    BEGIN
+        RETURN a::smallint;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2integer (a text) RETURNS integer AS $$
 BEGIN
     BEGIN
