@@ -781,6 +781,9 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
     SELECT trunc($1 * 100)::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION to_cents (a_amount text) RETURNS integer AS $$
+    SELECT trunc(str2numeric(a_amount) * 100)::integer;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- TO BOOL
