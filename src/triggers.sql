@@ -170,6 +170,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION refresh_zref() RETURNS "trigger" AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW zref;
+    RETURN NULL;
+end
+$$ LANGUAGE plpgsql;
 
 -- NON OBJ
 CREATE OR REPLACE FUNCTION before_delete_trigger () RETURNS "trigger" AS $$
@@ -268,6 +274,9 @@ CREATE TRIGGER odb_before_insert_trigger            BEFORE  INSERT  ON ref      
 CREATE TRIGGER odb_after_update_trigger             AFTER   UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
 CREATE TRIGGER odb_before_delete_trigger            BEFORE  DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_before_delete_trigger();
 CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
+
+--- TYPE
+CREATE TRIGGER refresh_zref AFTER       INSERT OR UPDATE OR DELETE  ON type          FOR EACH STATEMENT EXECUTE PROCEDURE refresh_zref();
 
 -- PROP
 CREATE TRIGGER odb_before_insert_trigger            BEFORE  INSERT  ON prop         FOR EACH ROW EXECUTE PROCEDURE odb_before_insert_trigger();
