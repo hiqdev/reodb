@@ -172,7 +172,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION refresh_zref() RETURNS "trigger" AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW zref;
+    REFRESH MATERIALIZED VIEW zref_mat;
     RETURN NULL;
 end
 $$ LANGUAGE plpgsql;
