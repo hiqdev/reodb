@@ -1,8 +1,8 @@
 package:
-    name:           reodb
-    headline:       reODB
-    title:          Reusable objective database
     type:           project
+    name:           reodb
+    title:          Reusable objective database
+    headline:       reODB
     keywords:       SQL, EAV
 
 require:
