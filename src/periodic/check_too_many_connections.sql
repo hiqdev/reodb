@@ -1,4 +1,4 @@
 SELECT      'REDALERT too many connections', count(*)
 FROM        pg_stat_activity
-HAVING      count(*) >80
+HAVING      count(*) > 120
 ;
