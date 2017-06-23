@@ -32,6 +32,11 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
         CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::text) END,
         CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::text) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value jsonb) AS $$
+    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+        CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::jsonb) END,
+        CASE WHEN $3 IS NULL THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::jsonb) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 --- REPLACE with old value
 CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value boolean,old boolean) RETURNS replace_data AS $$
@@ -73,6 +78,11 @@ CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value 
     SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
             CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
             CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value jsonb,old jsonb) RETURNS replace_data AS $$
+    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
+            CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::jsonb) END,
+            CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::jsonb) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 --- DEBUG
