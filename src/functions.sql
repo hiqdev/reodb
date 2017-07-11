@@ -1,5 +1,3 @@
--- $Header: /home/sol/usr/cvs/reodb/functions.sql,v 1.3 2007/08/31 11:16:18 sol Exp $
-
 -- REPLACE
 CREATE TYPE replace_data AS (keys text,vals text,sets text);
 CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,value boolean) AS $$
@@ -1374,32 +1372,32 @@ CREATE OR REPLACE FUNCTION prop_full_name (a_obj_id integer) RETURNS text AS $$
     SELECT class_full_name(class_id)||':'||name FROM prop WHERE obj_id = $1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION replace_prop (
-    a_obj_id    integer,    -- $1
-    a_class_id  integer,    -- $2
-    a_name      text,       -- $3
-    a_type_id   integer,    -- $4
-    a_no        integer,    -- $5
-    a_def       text,       -- $6
+    a_obj_id        integer,    -- $1
+    a_class_id      integer,    -- $2
+    a_name          text,       -- $3
+    a_type_id       integer,    -- $4
+    a_no            integer,    -- $5
+    a_def           text,       -- $6
     a_is_in_table   boolean,    -- $7
     a_can_be_null   boolean,    -- $8
     a_is_required   boolean,    -- $9
     a_is_repeated   boolean,    -- $10
-    a_label     text        -- $11
+    a_label         text        -- $11
 ) RETURNS integer AS $$
 DECLARE
     the_id  integer := a_obj_id;
     prep    replace_data;
 BEGIN
     prep := (NULL,NULL,NULL);
-    prep := prepare_replace(prep,'class_id',    a_class_id);
-    prep := prepare_replace(prep,'name',        a_name);
-    prep := prepare_replace(prep,'type_id',     a_type_id);
-    prep := prepare_replace(prep,'no',      a_no);
-    prep := prepare_replace(prep,'def',     a_def);
-    prep := prepare_replace(prep,'is_in_table', a_is_in_table);
-    prep := prepare_replace(prep,'can_be_null', a_can_be_null);
-    prep := prepare_replace(prep,'is_required', a_is_required);
-    prep := prepare_replace(prep,'is_repeated', a_is_repeated);
+    prep := prepare_replace(prep,   'class_id',     a_class_id);
+    prep := prepare_replace(prep,   'name',         a_name);
+    prep := prepare_replace(prep,   'type_id',      a_type_id);
+    prep := prepare_replace(prep,   'no',           a_no);
+    prep := prepare_replace(prep,   'def',          a_def);
+    prep := prepare_replace(prep,   'is_in_table',  a_is_in_table);
+    prep := prepare_replace(prep,   'can_be_null',  a_can_be_null);
+    prep := prepare_replace(prep,   'is_required',  a_is_required);
+    prep := prepare_replace(prep,   'is_repeated',  a_is_repeated);
     IF the_id IS NULL THEN
         EXECUTE 'INSERT INTO prop ('||prep.keys||') VALUES ('||prep.vals||') RETURNING obj_id' INTO the_id;
     ELSE
@@ -1412,11 +1410,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_prop (
-    a_no        integer,        -- $1
-    a_prop      text,       -- $2
-    a_type_id   integer,        -- $3
-    a_label     text,       -- $4
-    a_def       text,       -- $5
+    a_no            integer,    -- $1
+    a_prop          text,       -- $2
+    a_type_id       integer,    -- $3
+    a_label         text,       -- $4
+    a_def           text,       -- $5
     a_is_in_table   boolean,    -- $6
     a_can_be_null   boolean,    -- $7
     a_is_required   boolean,    -- $8
@@ -1433,13 +1431,6 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_prop (a_prop text,a_type_id integer,a_label text) RETURNS integer AS $$
     SELECT set_prop(null,$1,$2,$3,null,null,null,null,null);
 $$ LANGUAGE sql VOLATILE STRICT;
-
-----------------------------
--- IS SET VALUE
-----------------------------
-CREATE OR REPLACE FUNCTION is_set_value (a_obj_id integer,a_prop_id integer) RETURNS boolean AS $$
-    SELECT EXISTS (SELECT 1 FROM value WHERE obj_id = $1 AND prop_id = $2);
-$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- GET VALUE
@@ -1519,6 +1510,13 @@ CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class_id integer
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_props_values (a_obj_id integer,a_class text) RETURNS TABLE(name text, value text) AS $$
     SELECT *  FROM get_props_values($1, class_id($2));
+$$ LANGUAGE sql STABLE STRICT;
+
+----------------------------
+-- IS SET VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION is_set_value (a_obj_id integer,a_prop_id integer) RETURNS boolean AS $$
+    SELECT EXISTS (SELECT 1 FROM value WHERE obj_id = $1 AND prop_id = $2);
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
@@ -1977,7 +1975,7 @@ CREATE OR REPLACE FUNCTION dump_all_values (a_obj_id integer) RETURNS text AS $$
         SELECT      c.name||':'||p.name||'="'||v.value||'"' AS val
         FROM        value       v
         JOIN        prop        p ON p.obj_id=v.prop_id
-        JOIN        ref     c ON c.obj_id=p.class_id
+        JOIN        ref         c ON c.obj_id=p.class_id
         WHERE       v.obj_id=$1
         ORDER BY    c.name,p.name,v.no
     )   AS a
