@@ -1,11 +1,11 @@
-hiqdev/reodb changelog
-----------------------
+# hiqdev/reodb commits history
 
-## Under development
+## [Under development]
 
-- Fixed code organization
-- Added packaging: hidev, README, CHANGELOG, LICENSE
-- Added history
+- Fixed code organization ([sol@hiqdev.com])
+- Added packaging: hidev, README, CHANGELOG, LICENSE ([sol@hiqdev.com])
+- Added history ([sol@hiqdev.com], [andrii.vasyliev@gmail.com], [fursin.v@gmail.com], [telran.aka.lp@gmail.com])
 
-## Development started 2008-11-10
+## [Development started] - 2008-11-10
 
+[Under development]: https://github.com/hiqdev/reodb/releases
