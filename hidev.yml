@@ -1,0 +1,20 @@
+package:
+    type:           project
+    name:           reodb
+    title:          Reusable Objective DataBase
+    headline:       reODB
+    keywords:       SQL, EAV
+    description:    |
+        Reusable basis for database for objects.
+
+        Provides:
+
+        - reference tree `ref` with handy functions
+        - EAV (entity-attribute-value) `obj`, `prop`, `value`
+        - `status`
+        - `tag`
+        - `tie`
+
+require:
+    hiqdev/hidev-hiqdev: "*"
+    hiqdev/hidev-sql:    "*@dev"
