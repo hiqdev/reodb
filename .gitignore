@@ -1,20 +1,24 @@
 # hidev internals
-.hidev/composer.json
-.hidev/composer.lock
-.hidev/vendor
+/.hidev/composer.json
+/.hidev/composer.lock
+/.hidev/runtime
+/.hidev/vendor
+
+# local config
+/.env
+/hidev-local.yml
 
 # IDE & OS files
 .*.swp
-.idea
-nbproject
+.DS_Store
 .buildpath
+.idea
 .project
 .settings
 Thumbs.db
-.DS_Store
+nbproject
 
-# intermediate files
-_all.sql
-_redo.sql
-not
-err
+# Binaries
+chkipper.phar
+composer.phar
+ocular.phar

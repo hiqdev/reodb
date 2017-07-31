@@ -15,6 +15,6 @@ package:
         - `tag`
         - `tie`
 
-require:
+plugins:
     hiqdev/hidev-hiqdev: "*"
     hiqdev/hidev-sql:    "*@dev"
