@@ -1286,15 +1286,15 @@ BEGIN
     END IF;
     RETURN a_obj_id;
 END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,a__id integer,statuses text[]) RETURNS integer AS $$
-    SELECT set_statuses($1, $2, $3, null);
+    SELECT set_statuses($1, $2, $3, NULL);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text[]) RETURNS integer AS $$
-    SELECT set_statuses($1,status_id($2),$3);
+    SELECT set_statuses($1,status_id($2),$3, NULL);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_statuses (a_obj_id integer,parent text,statuses text) RETURNS integer AS $$
-    SELECT set_statuses($1,status_id($2),csplit($3));
+    SELECT set_statuses($1,status_id($2),csplit($3), NULL);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION add_statuses (a_obj_id integer,statuses integer[]) RETURNS integer AS $$
 DECLARE
