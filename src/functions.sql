@@ -125,9 +125,9 @@ END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -- DIFF
-CREATE OR REPLACE FUNCTION shorten (a text,n integer) RETURNS text AS $$
-    SELECT CASE WHEN length($1)>$2 THEN substr($1,1,$2)||'...' ELSE $1 END;
-$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION shorten (a text,len integer) RETURNS text AS $$
+    SELECT CASE WHEN length($1)>$2 THEN left($1,$2-3)||'...' ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION nonempty (a_1 text,a_2 text) RETURNS text AS $$
     SELECT CASE WHEN $1!='' THEN $1 ELSE $2 END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
@@ -441,11 +441,6 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION csplit (a text) RETURNS text[] AS $$
     SELECT split($1,',');
-$$ LANGUAGE sql IMMUTABLE STRICT;
-
--- SHORTEN
-CREATE OR REPLACE FUNCTION shorten (a text,len integer) RETURNS text AS $$
-    SELECT CASE WHEN length($1)>$2 THEN left($1,$2-3)||'...' ELSE $1 END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- CHECK IP
@@ -1002,9 +997,6 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_types text) RETURNS integer[] AS $$
     SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id($1) AND name=ANY(csplit($2));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
-    SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id($1) AND name=ANY($2);
-$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent_id integer,a_1 text,a_2 text) RETURNS SETOF integer AS $$
     SELECT obj_id FROM ref WHERE _id=$1 AND name IN ($2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
@@ -1023,11 +1015,8 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_4 text) RETURNS SETOF integer AS $$
     SELECT obj_id FROM ref WHERE _id=ref_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS SETOF integer AS $$
-    SELECT obj_id FROM type WHERE _id=ref_id($1) AND name=ANY($2);
-$$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_ids_agg (a_parent text,a_names text[]) RETURNS integer[] AS $$
-    SELECT array_agg(obj_id) FROM type WHERE _id=ref_id($1) AND name=ANY($2);
+CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS integer[] AS $$
+    SELECT array_agg(obj_id) FROM ref WHERE _id=ref_id($1) AND name=ANY($2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
     SELECT name FROM ref WHERE obj_id=$1;
@@ -1155,15 +1144,6 @@ CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $
     FROM        status      s
     JOIN        ref     t ON t.obj_id=s.type_id AND s.object_id=$1
     JOIN        ref     y ON y.obj_id=t._id AND y._id=top_ref_id('state')
-    ORDER BY    s.time DESC
-    LIMIT       1
-    OFFSET      1;
-$$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $$
-    SELECT      s.type_id
-    FROM        status      s
-    JOIN        ref     t ON t.obj_id=s.type_id AND s.object_id=$1
-    JOIN        ref     y ON y.obj_id=t._id AND y._id=top_type_id('state')
     ORDER BY    s.time DESC
     LIMIT       1
     OFFSET      1;
@@ -1914,7 +1894,7 @@ $$ LANGUAGE sql VOLATILE STRICT;
 ----------------------------
 -- OBJECT
 ----------------------------
-CREATE OR REPLACE FUNCTION get_obj_name (a_obj_id integer) RETURNS text AS $$
+CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
     class   text;
     name    text;
@@ -1929,7 +1909,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT class_full_name(class_id)||':'||get_obj_name($1) FROM obj WHERE obj_id=$1;
+    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id integer) RETURNS text AS $$
+    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION record_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE

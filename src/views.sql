@@ -1,6 +1,6 @@
 -- OBJ
 CREATE OR REPLACE VIEW obj_h AS
-    SELECT      o.obj_id,r.name AS class,get_obj_name(o.obj_id) AS name,o.label,o.descr,
+    SELECT      o.obj_id,r.name AS class,obj_name(o.obj_id) AS name,o.label,o.descr,
                 create_time,update_time
     FROM        obj o
     LEFT JOIN   ref r ON r.obj_id=o.class_id
@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW prop_h AS
 CREATE OR REPLACE VIEW value_h AS
     SELECT      id,obj_id,prop_id,
                 class_full_name(class_id)   AS class,
-                get_obj_name(obj_id)        AS name,
+                obj_name(obj_id)            AS name,
                 prop_full_name(prop_id)     AS prop,
                 no,value
     FROM        value   v
