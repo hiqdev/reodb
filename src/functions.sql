@@ -1998,7 +1998,7 @@ CREATE OR REPLACE FUNCTION pg_typename (a_oid integer) RETURNS name AS $$
 $$ LANGUAGE sql STABLE STRICT;
 
 ---------------------------
---UTILS
+--- UTILS
 ---------------------------
 CREATE OR REPLACE FUNCTION lock_table(a_table text,a_chek BOOLEAN, a_mode text) RETURNS BOOLEAN AS $$
 BEGIN
