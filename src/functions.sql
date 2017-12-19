@@ -2011,3 +2011,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
+CREATE OR REPLACE FUNCTION refresh_materialized_view(a_view text, is_concurent bool = FALSE) RETURNS BOOLEAN AS $$
+DECLARE
+    query text := 'REFRESH MATERIALIZED VIEW ';
+BEGIN
+    IF is_concurent THEN
+        query := query || ' CONCURRENTLY ';
+    END IF;
+    execute query || a_view;
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
