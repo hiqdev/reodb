@@ -1894,6 +1894,21 @@ $$ LANGUAGE sql VOLATILE STRICT;
 ----------------------------
 -- OBJECT
 ----------------------------
+CREATE OR REPLACE FUNCTION obj_id (a_class text, a_name text) RETURNS integer AS $$
+DECLARE
+    res integer;
+BEGIN
+    BEGIN
+        EXECUTE 'SELECT '||a_class||'_id('''||a_name||''')' INTO res;
+    EXCEPTION WHEN OTHERS THEN
+        -- DO NOTHING
+    END;
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION obj_id (a_obj text) RETURNS integer AS $$
+    SELECT obj_id(split_part(a_obj, ':', 1), split_part(a_obj, ':', 2));
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
     class   text;
