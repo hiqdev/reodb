@@ -320,6 +320,15 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2interval (a text) RETURNS interval AS $$
     SELECT coalesce(_str2interval($1),_str2interval('1'||$1));
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2jsonb (a text) RETURNS jsonb AS $$
+BEGIN
+    BEGIN
+        RETURN a::jsonb;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 -- OLD STR2something
 CREATE OR REPLACE FUNCTION str2int (a text,def integer) RETURNS integer AS $$
