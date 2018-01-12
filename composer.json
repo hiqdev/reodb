@@ -1,0 +1,49 @@
+{
+    "name": "hiqdev/reodb",
+    "type": "project",
+    "description": "Reusable Objective DataBase",
+    "keywords": [
+        "SQL",
+        "EAV"
+    ],
+    "homepage": "https://github.com/hiqdev/reodb",
+    "license": "BSD-3-Clause",
+    "support": {
+        "email": "support@hiqdev.com",
+        "source": "https://github.com/hiqdev/reodb",
+        "issues": "https://github.com/hiqdev/reodb/issues",
+        "wiki": "https://github.com/hiqdev/reodb/wiki",
+        "forum": "http://forum.hiqdev.com/"
+    },
+    "authors": [
+        {
+            "name": "Andrii Vasyliev",
+            "role": "Project lead",
+            "email": "sol@hiqdev.com",
+            "homepage": "http://hipanel.com/"
+        },
+        {
+            "name": "Dmitry Naumenko",
+            "role": "Lead backend developer",
+            "email": "d.naumenko.a@gmail.com",
+            "homepage": "http://silverfire.me/"
+        },
+        {
+            "name": "Andrey Klochok",
+            "role": "Lead frontend developer",
+            "email": "andreyklochok@gmail.com",
+            "homepage": "http://hiqdev.com/"
+        },
+        {
+            "name": "Yuriy Myronchuk",
+            "role": "QA Lead",
+            "email": "bladeroot@gmail.com",
+            "homepage": "http://hiqdev.com/"
+        }
+    ],
+    "require-dev": {
+        "hiqdev/hidev-php": "dev-master",
+        "hiqdev/hidev-sql": "dev-master",
+        "hiqdev/hidev-hiqdev": "dev-master"
+    }
+}
