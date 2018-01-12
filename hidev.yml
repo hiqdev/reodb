@@ -14,7 +14,3 @@ package:
         - `status`
         - `tag`
         - `tie`
-
-plugins:
-    hiqdev/hidev-hiqdev: "*"
-    hiqdev/hidev-sql:    "*@dev"
