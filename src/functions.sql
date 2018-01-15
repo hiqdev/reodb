@@ -2029,12 +2029,12 @@ $$ LANGUAGE sql STABLE STRICT;
 ---------------------------
 --- UTILS
 ---------------------------
-CREATE OR REPLACE FUNCTION lock_table(a_table text,a_chek BOOLEAN, a_mode text) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION lock_table(a_table text, a_flag boolean, a_mode text) RETURNS BOOLEAN AS $$
 BEGIN
-    IF a_chek THEN
+    IF a_flag THEN
         a_mode = coalesce(a_mode,' IN SHARE UPDATE EXCLUSIVE MODE ');
-        execute 'LOCK TABLE '|| a_table || ' ' || a_mode ;
-        RETURN TRUE;
+        EXECUTE 'LOCK TABLE '|| a_table || ' ' || a_mode ;
+        RETURN true;
     END IF;
     RETURN false;
 END;
