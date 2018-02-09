@@ -1,6 +1,6 @@
 <?php
 
-namespace osce\tramplin\migrations;
+namespace hiqdev\reodb\yii\migrations;
 
 use PDO;
 use yii\base\InvalidCallException;

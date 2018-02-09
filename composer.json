@@ -48,7 +48,7 @@
     },
     "autoload": {
         "psr-4": {
-            "hiqdev\\reodb\\": "src"
+            "hiqdev\\reodb\\yii": "yii"
         }
     }
 }
