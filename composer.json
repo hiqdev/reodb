@@ -45,5 +45,10 @@
         "hiqdev/hidev-php": "dev-master",
         "hiqdev/hidev-sql": "dev-master",
         "hiqdev/hidev-hiqdev": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "hiqdev\\reodb\\": "src"
+        }
     }
 }
