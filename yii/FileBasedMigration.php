@@ -11,19 +11,23 @@ use yii\db\Migration;
  *
  * @author Dmytro Naumenko <d.naumenko.a@gmail.com>
  */
-class FileBasedMigration extends Migration
+abstract class FileBasedMigration extends Migration
 {
-    protected $dir;
-
     protected $importFiles = [];
+
+    /**
+     * @return string the dir with files
+     */
+    abstract public function getFilesDir();
 
     public function safeUp()
     {
-        if (!dir_exists($this->dir)) {
-            throw new InvalidCallException('Wrong directory for file based migration: ' . $this->dir);
+        $dir = $this->getFilesDir();
+        if (!file_exists($dir)) {
+            throw new InvalidCallException('Wrong directory for file based migration: ' . $dir);
         }
         foreach ($this->importFiles as $filename) {
-            $this->applyMigrationFile($this->dir . '/' . $filename);
+            $this->applyMigrationFile($dir . '/' . $filename);
         }
     }
 

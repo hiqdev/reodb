@@ -6,7 +6,13 @@ use hiqdev\reodb\yii\FileBasedMigration;
 
 class m180209_000000_reodb extends FileBasedMigration
 {
-    protected $dir = dirname(dirname(__DIR__)) . '/src';
+    /**
+     * {@inheritdoc}
+     */
+    public function getFilesDir()
+    {
+        return dirname(dirname(__DIR__)) . '/src';
+    }
 
     protected $importFiles = [
         "create.sql",
