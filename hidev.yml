@@ -1,5 +1,5 @@
 package:
-    type:           project
+    type:           yii2-extension
     name:           reodb
     title:          Reusable Objective DataBase
     headline:       reODB

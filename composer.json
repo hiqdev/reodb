@@ -1,5 +1,6 @@
 {
     "name": "hiqdev/reodb",
+    "type": "yii2-extension",
     "description": "Reusable Objective DataBase",
     "keywords": [
         "SQL",
