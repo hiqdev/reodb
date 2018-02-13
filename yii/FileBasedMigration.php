@@ -6,6 +6,11 @@ use PDO;
 use yii\base\InvalidCallException;
 use yii\db\Migration;
 
+/**
+ * Class FileBasedMigration
+ *
+ * @author Dmytro Naumenko <d.naumenko.a@gmail.com>
+ */
 class FileBasedMigration extends Migration
 {
     protected $dir;
