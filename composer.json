@@ -1,6 +1,6 @@
 {
     "name": "hiqdev/reodb",
-    "type": "project",
+    "type": "package",
     "description": "Reusable Objective DataBase",
     "keywords": [
         "SQL",
