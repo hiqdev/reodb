@@ -13,6 +13,9 @@ use yii\db\Migration;
  */
 abstract class FileBasedMigration extends Migration
 {
+    /**
+     * @var string[]
+     */
     protected $importFiles = [];
 
     /**
