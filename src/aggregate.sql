@@ -57,6 +57,20 @@ CREATE AGGREGATE last (timestamp,double precision) (
     FINALFUNC = last_final
 );
 
+--- LAST timestamp,text
+CREATE TYPE timestamp_text AS (t timestamp,d text);
+CREATE OR REPLACE FUNCTION last_state (state timestamp_text,t timestamp,d text) RETURNS timestamp_text AS $$
+    SELECT CASE WHEN $1 IS NULL OR $2>$1.t THEN ($2,$3)::timestamp_text ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION last_final (state timestamp_text) RETURNS text AS $$
+    SELECT $1.d;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE last (timestamp,text) (
+    STYPE = timestamp_text,
+    SFUNC = last_state,
+    FINALFUNC = last_final
+);
+
 -- FIRST/LAST integer,integer
 CREATE TYPE integer_integer AS (k integer,v integer);
 
