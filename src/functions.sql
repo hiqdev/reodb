@@ -281,6 +281,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2uuid (a text) RETURNS uuid AS $$
+BEGIN
+    BEGIN
+        RETURN a::uuid;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2double (a text) RETURNS double precision AS $$
 BEGIN
     BEGIN
