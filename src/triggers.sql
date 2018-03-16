@@ -128,7 +128,7 @@ CREATE OR REPLACE FUNCTION nonobj_before_change_trigger () RETURNS "trigger" AS 
 DECLARE
     tmp text;
 BEGIN
-    EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE id='||OLD.id;
+    EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE id='||quote_literal(OLD.id);
     IF TG_OP='UPDATE' THEN
         RETURN NEW;
     ELSE
@@ -138,7 +138,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION nonobj_before_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
-    EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE id='||OLD.id;
+    EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE id='||quote_literal(OLD.id);
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
