@@ -72,9 +72,7 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $$
-DECLARE
-    tmp text;
+CREATE OR REPLACE FUNCTION reodb_simple_change_trigger () RETURNS "trigger" AS $$
 BEGIN
     EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
     IF TG_OP='UPDATE' THEN
@@ -98,6 +96,22 @@ BEGIN
         EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id='||ds_id||' WHERE obj_id='||OLD.obj_id;
     END IF;
     RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $$
+BEGIN
+    IF TG_OP='DELETE' THEN
+        IF ref_name(OLD.state_id) IN ('deleted', 'temporary') THEN
+            EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+            RETURN OLD;
+        ELSE
+            EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id=state_id('''||TG_RELNAME||''',''deleted'') WHERE obj_id='||OLD.obj_id;
+            RETURN NULL;
+        END IF;
+    ELSE
+        EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_before_delete_trigger () RETURNS "trigger" AS $$
@@ -125,8 +139,6 @@ $$ LANGUAGE plpgsql;
 
 -- NON OBJ TRIGGERS
 CREATE OR REPLACE FUNCTION nonobj_before_change_trigger () RETURNS "trigger" AS $$
-DECLARE
-    tmp text;
 BEGIN
     EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE id='||quote_literal(OLD.id);
     IF TG_OP='UPDATE' THEN
