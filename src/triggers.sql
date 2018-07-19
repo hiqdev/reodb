@@ -218,18 +218,32 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION value_after_change_trigger () RETURNS "trigger" AS $$
 DECLARE
-    func text;
-    row record;
+    copy_to text;
+    func    text;
+    prop    text;
+    row     record;
 BEGIN
     IF (TG_OP='DELETE') THEN
         row := OLD;
     ELSE
         row := NEW;
     END IF;
-    func := get_value(row.prop_id,'prop:'||lower(TG_OP)||'_trigger');
+
+    func := coalesce(
+        get_value_non_def(row.prop_id, 'prop:'||lower(TG_OP)||'_trigger'),
+        get_value_non_def(row.prop_id, 'prop:trigger')
+    );
     IF func IS NOT NULL THEN
         EXECUTE 'SELECT '||func||'('||row.obj_id||')';
     END IF;
+
+    copy_to := get_value_non_def(row.prop_id, 'prop:copy_to');
+    IF copy_to IS NOT NULL THEN
+        FOREACH prop IN ARRAY string_to_array(copy_to, ';') LOOP
+            PERFORM set_value(row.obj_id, prop, row.value);
+        END LOOP;
+    END IF;
+
     RETURN row;
 END;
 $$ LANGUAGE plpgsql;
