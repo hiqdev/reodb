@@ -58,6 +58,7 @@ SELECT set_prop(12,'prop:can_be_null',  scalar_id('boolean'),   'Can be null',  
 SELECT set_prop(13,'prop:is_required',  scalar_id('boolean'),   'Is required',   'f',    TRUE,NULL,NULL,NULL);
 SELECT set_prop(14,'prop:is_repeated',  scalar_id('boolean'),   'Is repeated',   'f',    TRUE,NULL,NULL,NULL);
 SELECT set_prop(21,'prop:save_history', scalar_id('boolean'),   'Save history',  'f',    TRUE,NULL,NULL,NULL);
+SELECT set_prop( 0,'prop:trigger',      scalar_id('name'),      'Trigger on all','');
 SELECT set_prop( 0,'prop:insert_trigger',scalar_id('name'),     'Insert trigger','');
 SELECT set_prop( 0,'prop:update_trigger',scalar_id('name'),     'Update trigger','');
 SELECT set_prop( 0,'prop:delete_trigger',scalar_id('name'),     'Delete trigger','');
