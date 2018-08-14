@@ -100,6 +100,13 @@ BEGIN
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION raise_exception (a text) RETURNS boolean AS $$
+BEGIN
+    RAISE EXCEPTION '%',a;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
 
 -- CJOIN
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
