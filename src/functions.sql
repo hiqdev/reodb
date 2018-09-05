@@ -1361,10 +1361,10 @@ DECLARE
 BEGIN
     pos := position(':' in a_prop);
     RETURN  obj_id FROM prop
-    WHERE   name = substr(a_prop,pos+1) AND
-        CASE    WHEN pos=0 THEN TRUE
-            ELSE class_id=class_id(substr(a_prop,0,pos))
-        END
+    WHERE   name = substr(a_prop, pos + 1)
+        AND CASE    WHEN pos=0 THEN TRUE
+                    ELSE class_id=class_id(substr(a_prop, 0, pos))
+            END
     LIMIT   1;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
