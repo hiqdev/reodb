@@ -41,6 +41,9 @@
             "homepage": "http://hiqdev.com/"
         }
     ],
+    "suggest": {
+        "ext-PDO": "Required to execute migrations"
+    },
     "require-dev": {
         "hiqdev/hidev-php": "dev-master",
         "hiqdev/hidev-sql": "dev-master",
@@ -48,7 +51,8 @@
     },
     "autoload": {
         "psr-4": {
-            "hiqdev\\reodb\\yii\\": "yii"
+            "hiqdev\\reodb\\yii\\": "yii",
+            "hiqdev\\reodb\\doctrine2\\": "doctrine2"
         }
     }
 }
