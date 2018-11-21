@@ -36,14 +36,10 @@ abstract class FileBasedMigration extends Migration
 
     protected function applyMigrationFile($filename)
     {
-        $attr_emulate_prepares = $this->db->pdo->getAttribute(PDO::ATTR_EMULATE_PREPARES);
-        $this->db->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
         $time = $this->beginCommand('Importing ' . $filename);
         $sql = file_get_contents($filename);
-        $command = $this->db->createCommand($sql);
-        $command->execute();
+        $this->db->pdo->exec($sql);
         $this->endCommand($time);
-        $this->db->pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, $attr_emulate_prepares);
     }
 
     public function down()
