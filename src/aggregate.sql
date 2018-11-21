@@ -43,20 +43,6 @@ CREATE AGGREGATE sjoin (text) (
     STYPE = text
 );
 
---- LAST timestamp,double
-CREATE TYPE timestamp_double AS (t timestamp,d double precision);
-CREATE OR REPLACE FUNCTION last_state (state timestamp_double,t timestamp,d double precision) RETURNS timestamp_double AS $$
-    SELECT CASE WHEN $1 IS NULL OR $2>$1.t THEN ($2,$3)::timestamp_double ELSE $1 END;
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION last_final (state timestamp_double) RETURNS double precision AS $$
-    SELECT $1.d;
-$$ LANGUAGE sql STABLE STRICT;
-CREATE AGGREGATE last (timestamp,double precision) (
-    STYPE = timestamp_double,
-    SFUNC = last_state,
-    FINALFUNC = last_final
-);
-
 -- FIRST/LAST integer,integer
 CREATE TYPE integer_integer AS (k integer,v integer);
 
@@ -161,6 +147,33 @@ CREATE OR REPLACE FUNCTION last_final (state timestamp_integer) RETURNS integer 
 $$ LANGUAGE sql STABLE STRICT;
 CREATE AGGREGATE last (timestamp,integer) (
     STYPE = timestamp_integer,
+    SFUNC = last_state,
+    FINALFUNC = last_final
+);
+
+-- FIRST/LAST timestamp,double precision
+CREATE TYPE timestamp_double_precision AS (k timestamp,v double precision);
+
+CREATE OR REPLACE FUNCTION first_state (state timestamp_double_precision,k timestamp,v double precision) RETURNS timestamp_double_precision AS $$
+    SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::timestamp_double_precision ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION first_final (state timestamp_double_precision) RETURNS double precision AS $$
+    SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE first (timestamp,double precision) (
+    STYPE = timestamp_double_precision,
+    SFUNC = first_state,
+    FINALFUNC = first_final
+);
+
+CREATE OR REPLACE FUNCTION last_state (state timestamp_double_precision,k timestamp,v double precision) RETURNS timestamp_double_precision AS $$
+    SELECT CASE WHEN $1 IS NULL OR $2>$1.k THEN ($2,$3)::timestamp_double_precision ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION last_final (state timestamp_double_precision) RETURNS double precision AS $$
+    SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE last (timestamp,double precision) (
+    STYPE = timestamp_double_precision,
     SFUNC = last_state,
     FINALFUNC = last_final
 );
