@@ -194,7 +194,7 @@ CREATE OR REPLACE FUNCTION passgen (length integer) RETURNS text AS $$
     SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,$1);
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
-    SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,10);
+    SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,16);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 --- IP2INT & INT2IP functions
