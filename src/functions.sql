@@ -1949,13 +1949,12 @@ DECLARE
     class   text;
     name    text;
 BEGIN
-    SELECT INTO class,name r.name,get_value(obj_id,'class:obj_name',r.name)
-    FROM ref r WHERE obj_id = (SELECT class_id FROM obj WHERE obj_id=$1);
+    SELECT INTO class,name r.name,get_value(r.obj_id, 'class:obj_name')
+    FROM ref r WHERE r.obj_id = (SELECT class_id FROM obj WHERE obj_id=a_obj_id);
     IF name IS NOT NULL THEN
-        EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||$1 INTO name;
-        RETURN name;
+        EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||a_obj_id INTO name;
     END IF;
-    RETURN NULL;
+    RETURN name;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
