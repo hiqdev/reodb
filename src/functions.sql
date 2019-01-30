@@ -1772,7 +1772,7 @@ BEGIN
             ELSE
                 field := substr(a_path,0,pos);
             END IF;
-            class := obj_class(a_obj_id);
+            class := get_obj_class(a_obj_id);
             EXECUTE 'SELECT '||field||' FROM '||class||' WHERE obj_id='||a_obj_id INTO n_obj_id;
         END IF;
         IF pos>0 THEN
