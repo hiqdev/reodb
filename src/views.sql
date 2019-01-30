@@ -12,6 +12,7 @@ CREATE OR REPLACE VIEW zref AS
 ;
 CREATE OR REPLACE VIEW gref AS
     SELECT      zt.*,
+                gt._id AS g_id,
                 gt.name AS gname,
                 gt.name||','||zt.name AS g2name
     FROM        zref    zt
