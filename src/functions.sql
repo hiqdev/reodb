@@ -320,6 +320,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2date (a text) RETURNS timestamp AS $$
+BEGIN
+    BEGIN
+        RETURN a::date;
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2timestamp (a text) RETURNS timestamp AS $$
 BEGIN
     BEGIN
