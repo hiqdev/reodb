@@ -514,6 +514,11 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 --      AS '$libdir/pgcrypto', 'pg_gen_salt'
 --  LANGUAGE C VOLATILE STRICT;
 
+--- CRYPTO
+CREATE OR REPLACE FUNCTION sha1 (a_str bytea) returns text AS $$
+    SELECT encode(digest(a_str, 'sha1'), 'hex');
+$$ LANGUAGE sql STRICT IMMUTABLE;
+
 --- PASSWORD
 CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
     SELECT a_pwd ~E'^\\$\\w+\\$\\S+$';
