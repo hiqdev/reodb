@@ -514,36 +514,15 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 --      AS '$libdir/pgcrypto', 'pg_gen_salt'
 --  LANGUAGE C VOLATILE STRICT;
 
--- PASSWORD
+--- PASSWORD
 CREATE OR REPLACE FUNCTION is_crypted (a_pwd text) RETURNS boolean AS $$
-    SELECT $1~E'^\\$\\d\\$';
+    SELECT a_pwd ~E'^\\$\\w+\\$\\S+$';
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION check_onetime_password (a_test text,a_pwd text) RETURNS boolean AS $$
-DECLARE
-    a_now numeric := str2num(split_part(a_test,'-',1));
-    z_now bigint  := to_epoch(now());
-BEGIN
-    RETURN z_now>a_now AND z_now<a_now+20 AND split_part(a_test,'-',2)=onetime_hash(a_pwd,a_now::text);
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION check_password (a_test text,a_pwd text) RETURNS boolean AS $$
-    SELECT check_onetime_password($1,$2) OR CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
+CREATE OR REPLACE FUNCTION check_password (a_test text, a_pwd text) RETURNS boolean AS $$
+    SELECT a_pwd = crypt(a_test, a_pwd);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
-    SELECT CASE WHEN is_crypted($1) THEN $1 ELSE crypt($1,gen_salt('bf',10)) END;
-$$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION onetime_hash (a_pwd text,a_now text) RETURNS text AS $$
-    SELECT md5($1||'luamUl5kruj]Twef1Blok7otob'||$2);
-$$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION onetime_password (a_pwd text,a_now timestamp) RETURNS text AS $$
-DECLARE
-    z_now bigint := to_epoch(a_now);
-BEGIN
-    RETURN z_now||'-'||onetime_hash(a_pwd,z_now::text);
-END;
-$$ LANGUAGE plpgsql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION onetime_password (a_pwd text) RETURNS text AS $$
-    SELECT onetime_password($1,now()::timestamp);
+    SELECT crypt(a_pwd, gen_salt('bf', 7));
 $$ LANGUAGE sql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
