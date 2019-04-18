@@ -530,7 +530,7 @@ CREATE OR REPLACE FUNCTION check_password (a_test text,a_pwd text) RETURNS boole
     SELECT check_onetime_password($1,$2) OR CASE WHEN is_crypted($2) THEN $2=crypt($1,$2) ELSE $1=$2 END;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
-    SELECT CASE WHEN is_crypted($1) THEN $1 ELSE crypt($1,gen_salt('md5')) END;
+    SELECT CASE WHEN is_crypted($1) THEN $1 ELSE crypt($1,gen_salt('bf',10)) END;
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION onetime_hash (a_pwd text,a_now text) RETURNS text AS $$
     SELECT md5($1||'luamUl5kruj]Twef1Blok7otob'||$2);
