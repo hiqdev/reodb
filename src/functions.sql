@@ -1055,6 +1055,12 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_pname (a_obj_id integer) RETURNS text AS $$
     SELECT name FROM ref WHERE obj_id=(SELECT _id FROM ref WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION ref_g2name (a_obj_id integer) RETURNS text AS $$
+    SELECT      pt.name||','||zt.name
+    FROM        ref     zt
+    JOIN        ref     pt ON pt.obj_id = zt._id
+    WHERE       zt.obj_id = a_obj_id
+$$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer) RETURNS text AS $$
     SELECT CASE WHEN _id=0 THEN name ELSE ref_full_name(_id)||','||name END
     FROM ref WHERE obj_id=$1;
