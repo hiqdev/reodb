@@ -878,7 +878,7 @@ CREATE OR REPLACE FUNCTION compare (cmp text,lhs double precision,rhs double pre
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
--- GET OBJ CLASS/STATE
+-- GET OBJ CLASS/STATE/FIELD
 ----------------------------
 CREATE OR REPLACE FUNCTION get_obj_class_id (a_obj_id integer) RETURNS integer AS $$
     SELECT class_id FROM obj WHERE obj_id=$1;
@@ -886,6 +886,28 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_class (a_obj_id integer) RETURNS text AS $$
     SELECT name FROM ref WHERE obj_id=(SELECT class_id FROM obj WHERE obj_id=$1);
 $$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_field (a_obj_id integer, a_field text, a_table text) RETURNS text AS $$
+DECLARE
+    res     text;
+BEGIN
+    EXECUTE 'SELECT '||a_field||' FROM '||a_table||' WHERE obj_id='||a_obj_id INTO res;
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_obj_field (a_obj_id integer, a_field text) RETURNS text AS $$
+DECLARE
+    pos     integer := strpos(a_field, ':');
+    z_class text;
+BEGIN
+    IF pos=0 THEN
+        z_class := get_obj_class(a_obj_id);
+    ELSE
+        z_class := substr(a_field, 0, pos);
+        a_field := substr(a_field, pos + 1);
+    END IF;
+    RETURN get_obj_field(a_obj_id, a_field, z_class);
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_state_id (a_obj_id integer) RETURNS integer AS $$
 DECLARE
     res integer;
@@ -928,6 +950,7 @@ BEGIN
       WHERE     o.obj_id = a_obj_id;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
+
 ----------------------------
 -- GET/SET OBJECT LABEL/DESCR
 ----------------------------
