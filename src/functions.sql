@@ -1773,6 +1773,74 @@ CREATE OR REPLACE FUNCTION in_values (a_obj_id integer,a_prop text,a_value text)
     THEN TRUE ELSE FALSE END;
 $$ LANGUAGE sql STABLE STRICT;
 
+----------------------------
+--- HIERARCHY VALUES
+----------------------------
+CREATE OR REPLACE FUNCTION root_obj_id () RETURNS integer AS $$
+    SELECT 0;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION find_obj_in_hierarchy (a_obj_id integer, a_prop_id integer, a_path text) RETURNS integer AS $$
+DECLARE
+    z_field     text;
+    next_path   text;
+    next_id     integer;
+    pos         integer := 0;
+BEGIN
+    IF is_set_value(a_obj_id, a_prop_id) THEN
+        RETURN a_obj_id;
+    END IF;
+
+    IF length(a_path) > 0 THEN
+        pos := strpos(a_path, ',');
+        IF pos=0 THEN
+            z_field := a_path;
+        ELSE
+            z_field := substr(a_path, 0, pos);
+        END IF;
+        next_id := get_obj_field(a_obj_id, z_field);
+    END IF;
+
+    IF pos > 0 THEN
+        next_path := substr(a_path, pos+1);
+        IF next_path='...' THEN
+            next_path := a_path;
+        END IF;
+        IF a_obj_id = root_obj_id() THEN
+            RETURN null;
+        END IF;
+
+        RETURN find_obj_in_hierarchy(next_id, a_prop_id, next_path);
+    END IF;
+
+    RETURN CASE WHEN is_set_value(next_id, a_prop_id) THEN next_id ELSE root_client_id() END;
+END;
+$$ LANGUAGE plpgsql STABLE STRICT;
+
+CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id integer, a_prop_id integer, a_path text) RETURNS text AS $$
+    SELECT get_value(find_obj_in_hierarchy(a_obj_id, a_prop_id, a_path), a_prop_id);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_hierarchy_value (a_obj_id integer, a_prop text, a_path text) RETURNS text AS $$
+    SELECT get_value(find_obj_in_hierarchy(a_obj_id, prop_id(a_prop), a_path), prop_id(a_prop));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id integer, a_prop_id integer, a_path text) RETURNS SETOF text AS $$
+    SELECT get_values(find_obj_in_hierarchy(a_obj_id, a_prop_id, a_path), a_prop_id);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_hierarchy_values (a_obj_id integer, a_prop text, a_path text) RETURNS SETOF text AS $$
+    SELECT get_values(find_obj_in_hierarchy(a_obj_id, prop_id(a_prop), a_path), prop_id(a_prop));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer, a_prop_id integer, a_path text) RETURNS integer AS $$
+    SELECT get_integer_value(find_obj_in_hierarchy(a_obj_id, a_prop_id, a_path), a_prop_id);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer, a_prop text, a_path text) RETURNS integer AS $$
+    SELECT get_integer_value(find_obj_in_hierarchy(a_obj_id, prop_id(a_prop), a_path), prop_id(a_prop));
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer (a_obj_id integer, a_prop_id integer, a_path text) RETURNS integer AS $$
+    SELECT get_integer_value(find_obj_in_hierarchy(a_obj_id, a_prop_id, a_path), a_prop_id);
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION get_integer_hierarchy_value (a_obj_id integer, a_prop text, a_path text) RETURNS integer AS $$
+    SELECT get_integer_value(find_obj_in_hierarchy(a_obj_id, prop_id(a_prop), a_path), prop_id(a_prop));
+$$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- PARAM
