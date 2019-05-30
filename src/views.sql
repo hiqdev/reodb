@@ -95,7 +95,9 @@ CREATE OR REPLACE VIEW errors AS
 --- TIE
 CREATE OR REPLACE VIEW tie_h AS
     SELECT      x.id,x.src_id,x.dst_id,x.tag_id,
-                obj_full_name(x.src_id) AS src,t.name AS tag,obj_full_name(x.dst_id) AS dst
+                obj_full_name(x.src_id) AS src,
+                coalesce(t.name, obj_full_name(x.tag_id)) AS tag,
+                obj_full_name(x.dst_id) AS dst
     FROM        tie         x
     LEFT JOIN   ref         t ON t.obj_id=x.tag_id
 ;
