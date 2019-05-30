@@ -82,10 +82,10 @@ CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value 
             CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
             CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value jsonb,old jsonb) RETURNS replace_data AS $$
-    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
-            CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3::jsonb) END,
-            CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::jsonb) END;
+CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data, a_name text, a_new jsonb, a_old jsonb) RETURNS replace_data AS $$
+    SELECT  CASE WHEN a_new IS NULL THEN a_data.keys ELSE coalesce(a_data.keys||',','')||a_name END,
+            CASE WHEN a_new IS NULL THEN a_data.vals ELSE coalesce(a_data.vals||',','')||quote_literal(CASE WHEN a_old IS NULL THEN a_new ELSE a_old||a_new END) END,
+            CASE WHEN a_new IS NULL OR a_new=a_old THEN a_data.sets ELSE coalesce(a_data.sets||',','')||a_name||'='||quote_literal(CASE WHEN a_old IS NULL THEN a_new ELSE a_old||a_new END) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value uuid,old uuid) RETURNS replace_data AS $$
     SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
