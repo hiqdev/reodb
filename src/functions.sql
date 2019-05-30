@@ -37,6 +37,11 @@ CREATE OR REPLACE FUNCTION prepare_replace (INOUT a_data replace_data,name text,
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 --- REPLACE with old value
+CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data, a_name text, a_new text, a_old text) RETURNS replace_data AS $$
+    SELECT  CASE WHEN a_new IS NULL THEN a_data.keys ELSE coalesce(a_data.keys||',','')||a_name END,
+            CASE WHEN a_new IS NULL THEN a_data.vals ELSE coalesce(a_data.vals||',','')||quote_literal(a_new) END,
+            CASE WHEN a_new IS NULL OR a_new=a_old THEN a_data.sets ELSE coalesce(a_data.sets||',','')||a_name||'='||quote_literal(a_new) END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value boolean,old boolean) RETURNS replace_data AS $$
     SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
             CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
@@ -51,11 +56,6 @@ CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value 
     SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
             CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||$3::text END,
             CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||$3::text END;
-$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value text,old text) RETURNS replace_data AS $$
-    SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
-            CASE WHEN $3 IS NULL THEN $1.vals ELSE coalesce($1.vals||',','')||quote_literal($3) END,
-            CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value interval,old interval) RETURNS replace_data AS $$
     SELECT  CASE WHEN $3 IS NULL THEN $1.keys ELSE coalesce($1.keys||',','')||$2 END,
