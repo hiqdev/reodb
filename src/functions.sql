@@ -1932,8 +1932,7 @@ BEGIN
     RETURN the_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
-
-CREATE OR REPLACE FUNCTION add_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION add_ties (a_src_id integer, a_tag_id integer, a_dst_ids integer[]) RETURNS integer AS $$
     WITH r AS (
         INSERT INTO tie (src_id,tag_id,dst_id)
         SELECT $1,$2,unnest($3)
@@ -1941,13 +1940,13 @@ CREATE OR REPLACE FUNCTION add_ties (a_src_id integer,a_tag_id integer,a_dst_ids
     )
     SELECT max(r.id) FROM r;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION del_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION del_ties (a_src_id integer, a_tag_id integer, a_dst_ids integer[]) RETURNS integer AS $$
     WITH r AS (
         DELETE FROM tie WHERE src_id=$1 AND tag_id=$2 AND dst_id=ANY($3) RETURNING id
     )
     SELECT max(r.id) FROM r;
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION set_ties (a_src_id integer,a_tag_id integer,a_dst_ids integer[]) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION set_ties (a_src_id integer, a_tag_id integer, a_dst_ids integer[]) RETURNS integer AS $$
     DELETE FROM tie WHERE src_id=$1 AND tag_id=$2;
     SELECT add_ties($1,$2,$3);
 $$ LANGUAGE sql VOLATILE STRICT;
