@@ -527,7 +527,7 @@ CREATE OR REPLACE FUNCTION check_password (a_test text, a_pwd text) RETURNS bool
     SELECT a_pwd = crypt(a_test, a_pwd);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
-    SELECT crypt(a_pwd, gen_salt('bf', 7));
+    SELECT CASE WHEN is_crypted(a_pwd) THEN a_pwd ELSE crypt(a_pwd, gen_salt('bf', 7)) END;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
