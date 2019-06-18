@@ -529,6 +529,9 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION crypt_password (a_pwd text) RETURNS text AS $$
     SELECT CASE WHEN is_crypted(a_pwd) THEN a_pwd ELSE crypt(a_pwd, gen_salt('bf', 7)) END;
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION crypt_password (a_pwd text, algo text) RETURNS text AS $$
+    SELECT crypt(a_pwd, gen_salt(algo));
+$$ LANGUAGE sql VOLATILE STRICT;
 
 --CREATE OR REPLACE FUNCTION last_strpos (haystack text,needle char) RETURNS integer AS
 --  '/www/rcp3/src/sql/last_strpos','last_strpos'
