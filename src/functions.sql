@@ -1943,6 +1943,14 @@ CREATE OR REPLACE FUNCTION add_ties (a_src_id integer, a_tag_id integer, a_dst_i
     )
     SELECT max(r.id) FROM r;
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION add_ties (a_src_ids integer[], a_tag_id integer, a_dst_id integer) RETURNS integer AS $$
+    WITH r AS (
+        INSERT INTO tie (src_id,tag_id,dst_id)
+        SELECT unnest(a_src_ids), a_tag_id, a_dst_id
+        RETURNING id
+    )
+    SELECT max(r.id) FROM r;
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION del_ties (a_src_id integer, a_tag_id integer, a_dst_ids integer[]) RETURNS integer AS $$
     WITH r AS (
         DELETE FROM tie WHERE src_id=$1 AND tag_id=$2 AND dst_id=ANY($3) RETURNING id
@@ -1952,6 +1960,10 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_ties (a_src_id integer, a_tag_id integer, a_dst_ids integer[]) RETURNS integer AS $$
     DELETE FROM tie WHERE src_id=$1 AND tag_id=$2;
     SELECT add_ties($1,$2,$3);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_ties (a_src_ids integer[], a_tag_id integer, a_dst_id integer) RETURNS integer AS $$
+    DELETE FROM tie WHERE tag_id = a_tag_id AND dst_id = a_dst_id;
+    SELECT add_ties(a_src_ids, a_tag_id, a_dst_id);
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------
