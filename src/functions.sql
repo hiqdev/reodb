@@ -1809,7 +1809,7 @@ BEGIN
         IF next_path='...' THEN
             next_path := a_path;
         END IF;
-        IF a_obj_id = root_obj_id() THEN
+        IF a_obj_id = root_obj_id() OR a_obj_id = next_id THEN
             RETURN null;
         END IF;
 
