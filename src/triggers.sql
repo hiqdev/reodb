@@ -126,7 +126,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_simple_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
-    EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+    EXECUTE 'INSERT INTO del_' || TG_RELNAME||' SELECT ($1).*' USING OLD;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
