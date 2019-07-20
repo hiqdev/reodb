@@ -266,6 +266,15 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2integers (a text) RETURNS integer[] AS $$
+BEGIN
+    BEGIN
+        RETURN csplit(a)::integer[];
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2integers (a text, def integer[]) RETURNS integer[] AS $$
 BEGIN
     BEGIN
