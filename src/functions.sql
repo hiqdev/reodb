@@ -196,6 +196,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION passgen () RETURNS text AS $$
     SELECT substr(encode(decode(md5(random()::text),'hex'),'base64'),1,16);
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION md5bigint (a_str text) RETURNS bigint AS $$
+    SELECT ('x'||md5(a_str))::bit(64)::bigint;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 
 --- IP2INT & INT2IP functions
 CREATE OR REPLACE FUNCTION ip2int (a text) RETURNS integer AS $$
