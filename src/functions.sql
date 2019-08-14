@@ -2126,3 +2126,37 @@ BEGIN
     RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION pg_has_advisory_xact_lock(a_key bigint) RETURNS BOOLEAN AS $$
+DECLARE
+    res boolean;
+BEGIN
+    SELECT INTO res EXISTS(
+        SELECT  1
+        FROM    pg_locks ad
+        WHERE   ad.locktype = 'advisory'
+          AND ad.mode = 'ExclusiveLock'
+          AND ad.classid = (a_key >> 32)::bit(32)::int
+          AND ad.objid = a_key::bit(32)::int
+    );
+
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION pg_has_advisory_xact_lock_shared(a_key bigint) RETURNS BOOLEAN AS $$
+DECLARE
+    res boolean;
+BEGIN
+    SELECT INTO res EXISTS(
+        SELECT  1
+        FROM    pg_locks ad
+        JOIN    pg_locks tx ON tx.virtualtransaction = ad.virtualtransaction AND tx.locktype = 'transactionid'
+        WHERE   ad.locktype = 'advisory'
+            AND ad.mode = 'ShareLock'
+            AND ad.classid = (a_key >> 32)::bit(32)::int
+            AND ad.objid = a_key::bit(32)::int
+            AND tx.transactionid::text = (txid_current() % (2^32)::bigint)::text
+    );
+
+    RETURN res;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
