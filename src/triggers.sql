@@ -240,7 +240,11 @@ BEGIN
     copy_to := get_value_non_def(row.prop_id, 'prop:copy_to');
     IF copy_to IS NOT NULL THEN
         FOREACH prop IN ARRAY string_to_array(copy_to, ';') LOOP
-            PERFORM set_value(row.obj_id, prop, row.value);
+            IF TG_OP = 'DELETE' THEN
+                PERFORM delete_value(row.obj_id, prop);
+            ELSE
+                PERFORM set_value(row.obj_id, prop, row.value);
+            END IF;
         END LOOP;
     END IF;
 
