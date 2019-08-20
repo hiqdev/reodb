@@ -126,7 +126,7 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 -- LANG
 CREATE OR REPLACE FUNCTION unlang (a_str text) RETURNS text AS $$
-    SELECT substr($1,7,abs(length($1)-7));
+    SELECT regexp_replace(a_str, '\{lang:(.+?)\}', '\1', 'gi');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- EXECUTE
