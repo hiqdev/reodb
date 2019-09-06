@@ -389,6 +389,31 @@ $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2int (a text) RETURNS integer AS $$
     SELECT str2int($1,0);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION fraction2num (a text,def numeric) RETURNS numeric AS $$
+DECLARE
+    result numeric;
+    numerator numeric;
+    denominator numeric;
+BEGIN
+    IF a !~ '^[\d.]+/[\d.]+$' THEN
+        RETURN def;
+    END IF;
+
+    SELECT INTO numerator substring(a from '^(.+)/');
+    SELECT INTO denominator substring(a from '/(.+)$');
+    IF denominator = 0 THEN
+        RAISE EXCEPTION 'denominator must be > 0';
+    END IF;
+
+    BEGIN
+        SELECT INTO result numerator/denominator;
+    EXCEPTION
+        WHEN OTHERS THEN
+        -- do nothing
+    END;
+    RETURN coalesce(result,def);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION str2num (a text,def numeric) RETURNS numeric AS $$
 DECLARE
     r numeric;
