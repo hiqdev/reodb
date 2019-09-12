@@ -1692,6 +1692,27 @@ END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 ----------------------------
+-- SET TABLE VALUE
+----------------------------
+CREATE OR REPLACE FUNCTION set_table_value (a_obj_id integer, a_table text, a_column text, a_value text, a_pk text) RETURNS integer AS $$
+DECLARE
+    the_id integer;
+BEGIN
+    EXECUTE 'UPDATE '||a_table||' SET '||a_column||' = '||quote_literal(a_value)||' WHERE '||a_pk||'='||a_obj_id||' RETURNING '||a_pk INTO the_id;
+    RETURN the_id;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION set_table_value (a_obj_id integer, a_table text, a_column text, a_value text) RETURNS integer AS $$
+BEGIN
+    BEGIN
+        RETURN set_table_value(a_obj_id, a_table, a_column, a_value, 'obj_id');
+    EXCEPTION WHEN undefined_column THEN
+        RETURN set_table_value(a_obj_id, a_table, a_column, a_value, 'id');
+    END;
+END;
+$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+
+----------------------------
 -- SET INTEGER VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION set_integer_value (a_obj_id integer,a_prop_id integer,a_value integer) RETURNS integer AS $$
