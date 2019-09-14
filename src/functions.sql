@@ -141,6 +141,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
+-- SCHEMA
+CREATE OR REPLACE FUNCTION find_primary_key (a_table text, a_namespace text) RETURNS text AS $$
+	SELECT  min(a.attname)
+	FROM	pg_index		i
+	JOIN	pg_class		c ON c.oid = i.indrelid AND c.oid = a_table::regclass
+	JOIN	pg_attribute	a ON a.attrelid = c.oid AND a.attnum = any(i.indkey)
+	JOIN	pg_namespace	n ON n.oid = c.relnamespace AND n.nspname = a_namespace::name
+	WHERE	i.indisprimary
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION find_primary_key (a_table text) RETURNS text AS $$
+	SELECT find_primary_key(a_table, 'public');
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
 -- DIFF
 CREATE OR REPLACE FUNCTION shorten (a text,len integer) RETURNS text AS $$
     SELECT CASE WHEN length($1)>$2 THEN left($1,$2-3)||'...' ELSE $1 END;
