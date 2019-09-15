@@ -1714,16 +1714,12 @@ BEGIN
     EXECUTE 'UPDATE '||a_table||' SET '||a_column||' = '||quote_literal(a_value)||' WHERE '||a_pk||'='||a_obj_id||' RETURNING '||a_pk INTO the_id;
     RETURN the_id;
 END;
-$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_table_value (a_obj_id integer, a_table text, a_column text, a_value text) RETURNS integer AS $$
 BEGIN
-    BEGIN
-        RETURN set_table_value(a_obj_id, a_table, a_column, a_value, 'obj_id');
-    EXCEPTION WHEN undefined_column THEN
-        RETURN set_table_value(a_obj_id, a_table, a_column, a_value, 'id');
-    END;
+	RETURN set_table_value(a_obj_id, a_table, a_column, a_value, coalesce(find_primary_key(a_table), 'id'));
 END;
-$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
 
 ----------------------------
 -- SET INTEGER VALUE
