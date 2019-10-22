@@ -1643,20 +1643,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
-BEGIN
-    RETURN set_value(a_obj_id,prop_id(a_prop),a_value);
-END;
-$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+    SELECT set_value(a_obj_id,prop_id(a_prop),a_value);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_prop text,a_value integer) RETURNS integer AS $$
-BEGIN
-    RETURN set_value(a_obj_id,prop_id(a_prop),a_value::text);
-END;
-$$ LANGUAGE plpgsql VOLATILE CALLED ON NULL INPUT;
+    SELECT set_value(a_obj_id,prop_id(a_prop),a_value::text);
+$$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_value (a_obj_id integer,a_class text,a_prop text,a_value text) RETURNS integer AS $$
-BEGIN
-    RETURN set_value(a_obj_id,prop_id(a_class,a_prop),a_value);
-END;
-$$ LANGUAGE plpgsql VOLATILE;
+    SELECT set_value(a_obj_id,prop_id(a_class,a_prop),a_value);
+$$ LANGUAGE sql VOLATILE;
+
 CREATE OR REPLACE FUNCTION set_value_if_not (a_obj_id integer,a_prop text,a_value text) RETURNS integer AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM value WHERE obj_id=a_obj_id AND prop_id=prop_id(a_prop)) THEN
