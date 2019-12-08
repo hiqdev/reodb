@@ -102,14 +102,16 @@ CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $
 BEGIN
     IF TG_OP='DELETE' THEN
         IF ref_name(OLD.state_id) IN ('deleted', 'temporary') THEN
-            EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+            EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''', ($1).* ' USING OLD;
             RETURN OLD;
         ELSE
             EXECUTE 'UPDATE '||TG_RELNAME||' SET state_id=state_id('''||TG_RELNAME||''',''deleted'') WHERE obj_id='||OLD.obj_id;
             RETURN NULL;
         END IF;
     ELSE
-        EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''',* FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
+        IF NEW IS DISTINCT FROM OLD THEN
+            EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''', ($1).* ' USING OLD;
+        END IF;
         RETURN NEW;
     END IF;
 END;
