@@ -2210,3 +2210,9 @@ BEGIN
     RETURN res;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION pg_has_advisory_lock_shared(a_key bigint) RETURNS BOOLEAN AS $$
+    SELECT pg_has_advisory_xact_lock_shared(a_key);
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION pg_has_advisory_lock(a_key bigint) RETURNS BOOLEAN AS $$
+SELECT pg_has_advisory_xact_lock(a_key);
+$$ LANGUAGE sql VOLATILE STRICT;
