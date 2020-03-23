@@ -1042,7 +1042,7 @@ CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer,a_update_time t
     UPDATE obj SET update_time=$2 WHERE obj_id = $1;
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_obj_update_time (a_obj_id integer) RETURNS void AS $$
-    UPDATE obj SET update_time='now' WHERE obj_id=$1;
+    UPDATE obj SET update_time=now() WHERE obj_id=$1;
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------

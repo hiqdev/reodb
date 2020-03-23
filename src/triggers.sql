@@ -19,7 +19,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION odb_after_update_trigger () RETURNS "trigger" AS $$
 BEGIN
-    UPDATE obj SET update_time='now' WHERE obj_id=NEW.obj_id;
+    UPDATE obj SET update_time=now() WHERE obj_id=NEW.obj_id;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -84,7 +84,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_after_update_trigger () RETURNS "trigger" AS $$
 BEGIN
-    UPDATE obj SET update_time='now' WHERE obj_id=NEW.obj_id;
+    UPDATE obj SET update_time=now() WHERE obj_id=NEW.obj_id;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -161,7 +161,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_time_trigger () RETURNS "trigger" AS $$
 BEGIN
     IF NEW.update_time IS NOT DISTINCT FROM OLD.update_time THEN
-        NEW.update_time := 'now';
+        NEW.update_time := now();
     END IF;
     RETURN NEW;
 END;
