@@ -1086,8 +1086,8 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (integer,text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$2 AND _id=$1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_id (text,text) RETURNS integer AS $$
-    SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id($1);
+CREATE OR REPLACE FUNCTION ref_id (parent text, name text) RETURNS integer AS $$
+    SELECT sub_ref_id(name, ref_id(parent));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_id (text,text,text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id($1,$2);
