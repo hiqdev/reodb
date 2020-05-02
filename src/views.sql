@@ -38,7 +38,7 @@ CREATE OR REPLACE VIEW state_h AS
 
 -- PROP
 CREATE OR REPLACE VIEW prop_h AS
-    SELECT      p.obj_id,p.no,p.class_id,class_full_name(p.class_id) AS class,name,ref_full_name(p.type_id) AS type,
+    SELECT      p.obj_id,p.no,p.class_id,class_full_name(p.class_id) AS class,p.name,ref_full_name(p.type_id) AS type,
                 to_sign(p.is_in_table)||to_sign(p.can_be_null)||to_sign(p.is_required)||to_sign(p.is_repeated) AS TNSR,
                 o.label,''''||p.def||'''' AS def
     FROM        prop    p

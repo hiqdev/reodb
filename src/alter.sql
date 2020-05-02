@@ -12,6 +12,8 @@ ALTER TABLE ONLY tie                ADD CONSTRAINT tie_id_pkey                  
 ALTER TABLE ONLY link               ADD CONSTRAINT link_obj_id_pkey                     PRIMARY KEY (obj_id);
 
 -- OBJ
+--- XXX no uniqueness because objects can have non unique names
+--- ALTER TABLE ONLY obj            ADD CONSTRAINT obj_name_class_id_uniq               UNIQUE (name, class_id);
 ALTER TABLE ONLY obj                ADD CONSTRAINT obj_class_id_fkey                    FOREIGN KEY (class_id)  REFERENCES ref (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        obj_class_id_idx                                    ON obj (class_id);

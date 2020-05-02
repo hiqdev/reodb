@@ -6,6 +6,7 @@ CREATE SEQUENCE "obj_id_seq" START 1000000;
 CREATE TABLE obj (
     obj_id          integer             NOT NULL DEFAULT nextval('obj_id_seq'),
     class_id        integer             NOT NULL,
+    name            text                NULL,
     label           text                NULL,
     descr           text                NULL,
     create_time     timestamp           NOT NULL DEFAULT now(),
