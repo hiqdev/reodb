@@ -1,11 +1,3 @@
--- OBJ
-CREATE OR REPLACE VIEW obj_h AS
-    SELECT      o.obj_id,r.name AS class,obj_name(o.obj_id) AS name,o.label,o.descr,
-                create_time,update_time
-    FROM        obj o
-    LEFT JOIN   ref r ON r.obj_id=o.class_id
-;
-
 -- REF
 CREATE OR REPLACE VIEW zref AS
     SELECT * FROM ref
@@ -34,6 +26,14 @@ CREATE OR REPLACE VIEW type_h AS
 
 CREATE OR REPLACE VIEW state_h AS
     SELECT * FROM ref_h WHERE name like 'state%';
+;
+
+-- OBJ
+CREATE OR REPLACE VIEW obj_h AS
+    SELECT      o.obj_id, o.class_id, o.create_time, o.update_time,
+                r.name AS class, o.name, o.label, o.descr
+    FROM        obj     o
+    LEFT JOIN   zref    r ON r.obj_id = o.class_id
 ;
 
 -- PROP
