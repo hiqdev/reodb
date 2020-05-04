@@ -313,14 +313,14 @@ CREATE TRIGGER odb_before_insert_trigger            BEFORE  INSERT  ON ref      
 CREATE TRIGGER odb_after_update_trigger             AFTER   UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
 CREATE TRIGGER odb_before_delete_trigger            BEFORE  DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_before_delete_trigger();
 CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
-CREATE TRIGGER reodb_update_name_trigger    AFTER UPDATE OR DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_update_name_trigger();
+CREATE TRIGGER reodb_update_name_trigger    AFTER INSERT OR UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_update_name_trigger();
 
 -- PROP
 CREATE TRIGGER odb_before_insert_trigger            BEFORE  INSERT  ON prop         FOR EACH ROW EXECUTE PROCEDURE odb_before_insert_trigger();
 CREATE TRIGGER odb_after_update_trigger             AFTER   UPDATE  ON prop         FOR EACH ROW EXECUTE PROCEDURE odb_after_update_trigger();
 CREATE TRIGGER odb_before_delete_trigger            BEFORE  DELETE  ON prop         FOR EACH ROW EXECUTE PROCEDURE odb_before_delete_trigger();
 CREATE TRIGGER odb_after_delete_trigger             AFTER   DELETE  ON prop         FOR EACH ROW EXECUTE PROCEDURE odb_after_delete_trigger();
-CREATE TRIGGER reodb_update_name_trigger    AFTER UPDATE OR DELETE  ON prop         FOR EACH ROW EXECUTE PROCEDURE reodb_update_name_trigger();
+CREATE TRIGGER reodb_update_name_trigger    AFTER INSERT OR UPDATE  ON prop         FOR EACH ROW EXECUTE PROCEDURE reodb_update_name_trigger();
 
 -- VALUE
 CREATE TRIGGER value_before_insert_trigger          BEFORE  INSERT  ON value        FOR EACH ROW EXECUTE PROCEDURE value_before_insert_trigger();
