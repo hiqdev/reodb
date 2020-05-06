@@ -1554,20 +1554,23 @@ CREATE OR REPLACE FUNCTION get_value_by_no (a_obj_id integer,a_prop_id integer,a
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
--- GET BIGINT VALUE
+-- GET INT VALUE
 ----------------------------
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop_id integer) RETURNS integer AS $$
-    SELECT coalesce(get_value($1,$2)::integer,0);
+CREATE OR REPLACE FUNCTION get_int_value (a_obj_id integer, a_prop_id integer) RETURNS integer AS $$
+    SELECT str2int(get_value(a_obj_id, a_prop_id));
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
-    SELECT coalesce(get_value($1,$2)::integer,0);
+CREATE OR REPLACE FUNCTION get_int_value (a_obj_id integer, a_prop_id integer, a_def integer) RETURNS integer AS $$
+    SELECT str2int(get_value(a_obj_id, a_prop_id), a_def);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION get_integer_value_by_no (a_obj_id integer,a_prop_id integer,a_no integer) RETURNS integer AS $$
-    SELECT coalesce(get_value_by_no($1,$2,$3)::integer,0);
+CREATE OR REPLACE FUNCTION get_int_value (a_obj_id integer,a_prop text) RETURNS integer AS $$
+    SELECT str2int(get_value(a_obj_id, a_prop));
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION get_int_value (a_obj_id integer, a_prop text, a_def integer) RETURNS integer AS $$
+    SELECT str2int(get_value(a_obj_id, a_prop), a_def);
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 ----------------------------
--- GET INTEGER VALUE
+-- DEPRECATED: GET INTEGER VALUE
 ----------------------------
 CREATE OR REPLACE FUNCTION get_integer_value (a_obj_id integer,a_prop_id integer) RETURNS integer AS $$
     SELECT coalesce(get_value($1,$2)::integer,0);
