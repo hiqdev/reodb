@@ -40,9 +40,10 @@ SELECT set_ref('scalar,label',          'label');
 SELECT set_ref('scalar,systempath',     'system path');
 
 -- PROPS
-SELECT set_prop( 1,'class:label',       scalar_id('text'),      'Label',         '',     TRUE,NULL,NULL,NULL);
-SELECT set_prop( 2,'class:descr',       scalar_id('textarea'),  'Description',   '',     TRUE,NULL,NULL,NULL);
-SELECT set_prop( 0,'class:obj_name',    scalar_id('text'),      'Object name',   '');
+SELECT set_prop( 1,'class:table',       scalar_id('text'),      'Table',         '');
+SELECT set_prop( 2,'class:obj_name',    scalar_id('text'),      'Object name',   '');
+SELECT set_prop(11,'class:label',       scalar_id('text'),      'Label',         '',     TRUE,NULL,NULL,NULL);
+SELECT set_prop(22,'class:descr',       scalar_id('textarea'),  'Description',   '',     TRUE,NULL,NULL,NULL);
 
 SELECT set_prop( 1,'ref:_id',           class_id('ref'),        'Parent',        NULL,   TRUE,NULL,NULL,NULL);
 SELECT set_prop( 2,'ref:name',          scalar_id('name'),      'Name',          '',     TRUE,NULL,NULL,NULL);

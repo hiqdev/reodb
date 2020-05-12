@@ -2054,15 +2054,15 @@ CREATE OR REPLACE FUNCTION obj_id (a_obj text) RETURNS integer AS $$
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
-    class   text;
-    name    text;
+    z_table text;
+    z_name  text;
 BEGIN
-    SELECT INTO class,name r.name,get_value(r.obj_id, 'class:obj_name')
+    SELECT INTO z_table,z_name get_value(r.obj_id, 'class:table', r.name), get_value(r.obj_id, 'class:obj_name')
     FROM ref r WHERE r.obj_id = (SELECT class_id FROM obj WHERE obj_id=a_obj_id);
-    IF name IS NOT NULL THEN
-        EXECUTE 'SELECT '||name||' FROM '||class||' WHERE obj_id='||a_obj_id INTO name;
+    IF z_name IS NOT NULL THEN
+        EXECUTE 'SELECT '||z_name||' FROM '||z_table||' WHERE obj_id='||a_obj_id INTO z_name;
     END IF;
-    RETURN name;
+    RETURN z_name;
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
