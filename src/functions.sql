@@ -1127,7 +1127,7 @@ CREATE OR REPLACE FUNCTION ref_ids (a_parent text,a_names text[]) RETURNS intege
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_name (a_obj_id integer) RETURNS text AS $$
     SELECT name FROM ref WHERE obj_id=$1;
-$$ LANGUAGE sql STABLE STRICT;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_in (a_obj_id integer,a_names text) RETURNS boolean AS $$
     SELECT name = ANY(csplit($2)) FROM ref WHERE obj_id=$1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
