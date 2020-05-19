@@ -2050,7 +2050,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_id (a_obj text) RETURNS integer AS $$
-    SELECT obj_id(split_part(a_obj, ':', 1), split_part(a_obj, ':', 2));
+    SELECT obj_id(substr(a_obj, 0, position(':' in a_obj)), substr(a_obj, position(':' in a_obj)+1));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_name (a_obj_id integer) RETURNS text AS $$
 DECLARE
