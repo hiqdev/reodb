@@ -2057,8 +2057,8 @@ DECLARE
     z_table text;
     z_name  text;
 BEGIN
-    SELECT INTO z_table,z_name get_value(r.obj_id, 'class:table', r.name), get_value(r.obj_id, 'class:obj_name')
-    FROM ref r WHERE r.obj_id = (SELECT class_id FROM obj WHERE obj_id=a_obj_id);
+    SELECT INTO z_table,z_name nonempty(get_value(r.obj_id, 'class:table'), r.name), get_value(r.obj_id, 'class:obj_name')
+    FROM zref r WHERE r.obj_id = (SELECT class_id FROM obj WHERE obj_id=a_obj_id);
     IF z_name IS NOT NULL THEN
         EXECUTE 'SELECT '||z_name||' FROM '||z_table||' WHERE obj_id='||a_obj_id INTO z_name;
     END IF;
@@ -2066,10 +2066,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_obj_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
+    SELECT class_full_name(class_id)||':'||obj_name(a_obj_id) FROM obj WHERE obj_id=a_obj_id;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION obj_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT class_full_name(class_id)||':'||obj_name($1) FROM obj WHERE obj_id=$1;
+    SELECT class_full_name(class_id)||':'||obj_name(a_obj_id) FROM obj WHERE obj_id=a_obj_id;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION record_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE
