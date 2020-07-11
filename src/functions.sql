@@ -1333,6 +1333,9 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION reset_status (a_obj_id integer,a_type text) RETURNS integer AS $$
     SELECT set_status($1,status_id($2),now());
 $$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
+    SELECT set_status(a_obj_id, a_type_id, now());
+$$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION add_status (a_obj_id integer,a_type_id integer) RETURNS integer AS $$
 DECLARE
     z_id        integer;
