@@ -212,6 +212,20 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION md5bigint (a_str text) RETURNS bigint AS $$
     SELECT ('x'||md5(a_str))::bit(64)::bigint;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION random_text(a_length int) RETURNS text AS $$
+DECLARE
+    chars text := '23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ';
+    result text;
+BEGIN
+    SELECT INTO result array_to_string(array(
+        SELECT SUBSTRING(chars FROM floor(random()*length(chars))::int+1 FOR 1)
+        FROM generate_series(1, a_length)
+    ), '');
+
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql VOLATILE STRICT;
+
 
 --- IP2INT & INT2IP functions
 CREATE OR REPLACE FUNCTION ip2int (a text) RETURNS integer AS $$
