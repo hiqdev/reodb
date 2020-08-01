@@ -1280,10 +1280,10 @@ $$ LANGUAGE sql STABLE STRICT;
 -- STATUS
 ----------------------------
 CREATE OR REPLACE FUNCTION status_id (a_name text) RETURNS integer AS $$
-    SELECT ref_id($1,top_ref_id('status'));
+    SELECT ref_id(a_name, top_ref_id('status'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION status_id (a_parent text,a_name text) RETURNS integer AS $$
-    SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('status',$1);
+CREATE OR REPLACE FUNCTION status_id (a_parent text, a_name text) RETURNS integer AS $$
+    SELECT ref_id(a_name, status_id(a_parent));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
     SELECT ref_full_name($1,top_ref_id('status'));
