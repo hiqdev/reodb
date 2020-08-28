@@ -93,7 +93,15 @@ CREATE OR REPLACE FUNCTION prepare_replace (a_data replace_data,name text,value 
             CASE WHEN $3 IS NULL OR $3=$4 THEN $1.sets ELSE coalesce($1.sets||',','')||$2||'='||quote_literal($3::uuid) END;
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
---- prepare insert
+-- prepare replace with force
+CREATE OR REPLACE FUNCTION prepare_replace (a replace_data, name text, value integer, old integer, force boolean) RETURNS replace_data AS $$
+    SELECT  CASE WHEN force OR  value IS NOT NULL THEN a.keys ELSE coalesce(a.keys||',','')||name END,
+            CASE WHEN force OR  value IS NOT NULL THEN a.vals ELSE coalesce(a.vals||',','')||coalesce(value::text, 'NULL') END,
+            CASE WHEN force OR (value IS NOT NULL AND value IS DISTINCT FROM old)
+                                                  THEN a.sets ELSE coalesce(a.sets||',','')||name||'='||coalesce(value::text, 'NULL') END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+
+-- force replace
 CREATE OR REPLACE FUNCTION force_replace (a replace_data, name text, value integer) RETURNS replace_data AS $$
     SELECT  coalesce(a.keys||',','')||name,
             coalesce(a.vals||',','')||coalesce(value::text, 'NULL'),
