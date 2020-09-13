@@ -12,6 +12,7 @@ SELECT set_ref(0,'class',               'Class');
 SELECT set_ref(0,'class,ref',           'Reference');
 SELECT set_ref(0,'class,prop',          'Property');
 SELECT set_ref(0,'class,link',          'Link');
+SELECT set_ref(0,'class,param',         'Param');
 
 -- SCALARS
 SELECT set_ref('scalar,integer',        'integer');
