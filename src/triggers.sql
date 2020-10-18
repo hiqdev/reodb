@@ -118,7 +118,7 @@ END;
 $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_before_delete_trigger () RETURNS "trigger" AS $$
 BEGIN
-    IF ref_name(OLD.state_id) IN ('deleted','temporary') THEN
+    IF ref_name(OLD.state_id) IN ('deleted', 'failed', 'temporary') THEN
         EXECUTE 'INSERT INTO del_'||TG_RELNAME||' SELECT * FROM '||TG_RELNAME||' WHERE obj_id='||OLD.obj_id;
         RETURN OLD;
     END IF;
