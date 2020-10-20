@@ -1309,8 +1309,8 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type text) RETURNS timestamp AS $$
     SELECT time FROM status WHERE object_id=$1 AND type_id=status_id($2);
 $$ LANGUAGE sql VOLATILE STRICT;
-CREATE OR REPLACE FUNCTION is_status (a_obj_id integer,a_type text) RETURNS boolean AS $$
-    SELECT time IS NOT NULL FROM status WHERE object_id=$1 AND type_id=status_id($2);
+CREATE OR REPLACE FUNCTION is_status (a_obj_id integer, a_type text) RETURNS boolean AS $$
+    SELECT time IS NOT NULL FROM status WHERE object_id = a_obj_id AND type_id = status_id(a_type);
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION has_status (a_obj_id integer,a_type text,a_period interval) RETURNS boolean AS $$
     SELECT EXISTS (SELECT 1 FROM status WHERE object_id=$1 AND type_id=status_id($2) AND time>now()-$3);
@@ -2010,6 +2010,23 @@ CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS i
 $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag text) RETURNS integer AS $$
     INSERT INTO tag (obj_id,tag_id) VALUES ($1,tag_id($2)) RETURNING id;
+$$ LANGUAGE sql VOLATILE STRICT;
+
+CREATE OR REPLACE FUNCTION tag_ids (a_parent text, a_names text) RETURNS integer[] AS $$
+    SELECT ref_ids(zref_id('tag', a_parent), a_names);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION set_tags (a_obj_id integer, a_tag_ids integer[]) RETURNS integer[] AS $$
+    DELETE FROM tag WHERE obj_id = a_obj_id;
+    WITH rows AS (
+        INSERT INTO tag (obj_id, tag_id)
+        SELECT a_obj_id, unnest
+        FROM unnest(a_tag_ids)
+        RETURNING id
+    )
+    SELECT array_agg(id) FROM rows;
+$$ LANGUAGE sql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION set_tags (a_obj_id integer, a_parent text, a_names text) RETURNS integer[] AS $$
+    SELECT set_tags(a_obj_id, tag_ids(a_parent, a_names));
 $$ LANGUAGE sql VOLATILE STRICT;
 
 ----------------------------

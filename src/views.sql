@@ -92,6 +92,14 @@ CREATE OR REPLACE VIEW errors AS
     GROUP BY    s.object_id
 ;
 
+--- TAG
+CREATE OR REPLACE VIEW tag_h AS
+    SELECT      x.*, o.name AS object, t.name AS tag
+    FROM        tag         x
+    LEFT JOIN   obj         o ON o.obj_id = x.obj_id
+    LEFT JOIN   ref         t ON t.obj_id = x.tag_id
+;
+
 --- TIE
 CREATE OR REPLACE VIEW tie_h AS
     SELECT      x.id,x.src_id,x.dst_id,x.tag_id,
