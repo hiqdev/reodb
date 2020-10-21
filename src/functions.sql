@@ -2013,7 +2013,7 @@ CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag text) RETURNS integer
 $$ LANGUAGE sql VOLATILE STRICT;
 
 CREATE OR REPLACE FUNCTION tag_ids (a_parent text, a_names text) RETURNS integer[] AS $$
-    SELECT ref_ids(zref_id('tag', a_parent), a_names);
+    SELECT ref_ids(ref_id('tag', a_parent), a_names);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_tags (a_obj_id integer, a_tag_ids integer[]) RETURNS integer[] AS $$
     DELETE FROM tag WHERE obj_id = a_obj_id;
