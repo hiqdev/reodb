@@ -572,27 +572,6 @@ CREATE OR REPLACE FUNCTION is_ip_allowed (a_ip inet,a_nets text) RETURNS boolean
     FROM (SELECT unnest(csplit($2)) AS net) AS foo;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
--- UNNEST
-CREATE OR REPLACE FUNCTION unnest (a text[]) RETURNS SETOF text AS $$
-DECLARE
-    r text;
-BEGIN
-    FOR i IN 1..coalesce(array_upper(a,1),0) LOOP
-        r := a[i];
-        RETURN NEXT r;
-    END LOOP;
-    RETURN;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT;
-
--- OBSOLETE AS OF 9.1
---  CREATE OR REPLACE FUNCTION crypt (text, text) RETURNS text
---      AS '$libdir/pgcrypto', 'pg_crypt'
---  LANGUAGE C IMMUTABLE STRICT;
---  CREATE OR REPLACE FUNCTION gen_salt (text) RETURNS text
---      AS '$libdir/pgcrypto', 'pg_gen_salt'
---  LANGUAGE C VOLATILE STRICT;
-
 --- CRYPTO
 CREATE OR REPLACE FUNCTION sha1 (a_str bytea) returns text AS $$
     SELECT encode(digest(a_str, 'sha1'), 'hex');
