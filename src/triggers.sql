@@ -311,7 +311,7 @@ CREATE TRIGGER obj_before_delete_trigger            BEFORE  DELETE  ON obj      
 -- REF
 CREATE TRIGGER reodb_before_insert_trigger          BEFORE  INSERT  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_before_insert_trigger();
 CREATE TRIGGER reodb_after_update_trigger           AFTER   UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_after_update_trigger();
-CREATE TRIGGER reodb_before_delete_trigger          BEFORE  DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_before_delete_trigger();
+CREATE TRIGGER reodb_simple_delete_trigger          BEFORE  DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_simple_delete_trigger();
 CREATE TRIGGER reodb_after_delete_trigger           AFTER   DELETE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_after_delete_trigger();
 CREATE TRIGGER reodb_update_name_trigger    AFTER INSERT OR UPDATE  ON ref          FOR EACH ROW EXECUTE PROCEDURE reodb_update_name_trigger();
 
