@@ -240,6 +240,11 @@ BEGIN
     RETURN result;
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
+CREATE OR REPLACE FUNCTION random_between(minimum int, maximum int) RETURNS int AS $$
+    SELECT (random() * (maximum-minimum+1) + minimum)::integer;
+$$ LANGUAGE sql VOLATILE STRICT;
+
+
 
 
 --- IP2INT & INT2IP functions
