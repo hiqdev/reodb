@@ -48,14 +48,13 @@ CREATE OR REPLACE VIEW prop_h AS
 
 -- VALUE
 CREATE OR REPLACE VIEW value_h AS
-    SELECT      id,obj_id,prop_id,
-                class_full_name(class_id)   AS class,
-                obj_name(obj_id)            AS name,
-                prop_full_name(prop_id)     AS prop,
-                no,value
+    SELECT      v.id, v.obj_id, v.prop_id,
+                class_full_name(o.class_id) AS class,
+                obj_name(v.obj_id)          AS name,
+                prop_full_name(v.prop_id)   AS prop,
+                v.no, v.value
     FROM        value   v
-    LEFT JOIN   obj o USING (obj_id)
-    ORDER BY    class,name,prop,no
+    LEFT JOIN   obj     o ON o.obj_id = v.obj_id
 ;
 
 -- PARAM
