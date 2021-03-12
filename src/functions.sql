@@ -107,6 +107,11 @@ CREATE OR REPLACE FUNCTION force_replace (a replace_data, name text, value integ
             coalesce(a.vals||',','')||coalesce(value::text, 'NULL'),
             coalesce(a.sets||',','')||name||'='||coalesce(value::text, 'NULL');
 $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION force_replace (a replace_data, name text, value timestamp) RETURNS replace_data AS $$
+    SELECT  coalesce(a.keys||',','')||name,
+            coalesce(a.vals||',','')||coalesce(quote_literal(value), 'NULL'),
+            coalesce(a.sets||',','')||name||'='||coalesce(quote_literal(value), 'NULL');
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 
 --- DEBUG
 CREATE OR REPLACE FUNCTION raise_notice (a text) RETURNS boolean AS $$
