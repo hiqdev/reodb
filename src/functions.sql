@@ -274,6 +274,16 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION int2ip (a integer) RETURNS inet AS $$
     SELECT '0.0.0.0'::inet+$1;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION inet_address_count (a inet) RETURNS double precision AS $$
+DECLARE
+    max_mask_length int = CASE WHEN family(a) = '4' THEN 32 ELSE 128 END;
+BEGIN
+    -- Returns number of IP addresses, used by this prefix
+    -- IPv6 networks may have enormous IP address count, so function returns DOUBLE PRECISION
+
+    RETURN 2 ^ (max_mask_length - masklen(a));
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 -- STR2something
 CREATE OR REPLACE FUNCTION str2inet (a text) RETURNS inet AS $$
