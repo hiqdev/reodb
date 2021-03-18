@@ -313,6 +313,11 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION str2boolean (a boolean) RETURNS boolean AS $$
+BEGIN
+    RETURN a;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION str2smallint (a text) RETURNS smallint AS $$
 BEGIN
     BEGIN
