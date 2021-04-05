@@ -1,5 +1,5 @@
 WITH ps AS (
-    SELECT      relname, relpages, reltuples, pg_table_size(relname::regclass) AS size
+    SELECT      relname, relpages, reltuples, pg_table_size((nspname || '.' || relname)::regclass) AS size
     FROM        pg_class        cl
     LEFT JOIN   pg_namespace    ns ON ns.oid = cl.relnamespace
     WHERE       nspname NOT IN ('information_schema')
