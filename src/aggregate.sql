@@ -70,6 +70,33 @@ CREATE AGGREGATE last (integer,integer) (
     FINALFUNC = last_final
 );
 
+-- FIRST/LAST integer,bigint
+CREATE TYPE integer_bigint AS (k integer,v bigint);
+
+CREATE OR REPLACE FUNCTION first_state (state integer_bigint,k integer,v bigint) RETURNS integer_bigint AS $$
+    SELECT CASE WHEN $1 IS NULL OR $2<$1.k THEN ($2,$3)::integer_bigint ELSE $1 END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION first_final (state integer_bigint) RETURNS bigint AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE AGGREGATE first (integer,bigint) (
+    STYPE = integer_bigint,
+    SFUNC = first_state,
+    FINALFUNC = first_final
+);
+
+CREATE OR REPLACE FUNCTION last_state (state integer_bigint,k integer,v bigint) RETURNS integer_bigint AS $$
+    SELECT CASE WHEN $1 IS NULL OR ($3 IS NOT NULL AND $2>$1.k) THEN ($2,$3)::integer_bigint ELSE $1 END;
+$$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION last_final (state integer_bigint) RETURNS bigint AS $$
+	SELECT $1.v;
+$$ LANGUAGE sql STABLE STRICT;
+CREATE AGGREGATE last (integer,bigint) (
+    STYPE = integer_bigint,
+    SFUNC = last_state,
+    FINALFUNC = last_final
+);
+
 -- FIRST/LAST integer,text
 CREATE TYPE integer_text AS (k integer,v text);
 
