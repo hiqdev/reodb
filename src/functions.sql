@@ -898,6 +898,9 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION from_cents (a_cents double precision) RETURNS numeric AS $$
     SELECT CASE WHEN $1>trunc($1) THEN ($1/100)::numeric ELSE trunc((coalesce($1,0)/100)::numeric,2) END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_cents (a_sum double precision) RETURNS double precision AS $$
+    SELECT (a_sum::numeric * 100)::double precision;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION to_cents (a_sum numeric) RETURNS integer AS $$
     SELECT trunc($1 * 100)::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
