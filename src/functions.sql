@@ -822,14 +822,45 @@ $$ LANGUAGE sql STABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION days_in_month (timestamp with time zone) RETURNS integer AS $$
     SELECT date_part('day',to_month($1+'1month')-to_month($1))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
+CREATE OR REPLACE FUNCTION seconds_in_month (timestamp without time zone) RETURNS integer AS $$
+    -- This procedure is not DST tolerant
+    SELECT days_in_month($1) * 86400;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION days2quantity (a_day timestamp with time zone,a_month timestamp with time zone) RETURNS double precision AS $$
     SELECT CASE
         WHEN $1 IS NULL THEN 1
         WHEN to_month($1)>to_month($2) THEN 0
         WHEN to_month($1)<to_month($2) THEN 1
-        ELSE 1-(date_part('day',$1)-1)/days_in_month($1)
+        ELSE 1 - ((date_part('day',$1)-1)/days_in_month($1))
     END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION fraction_of_month (
+    a_start_time timestamp with time zone,
+    a_end_time timestamp without time zone,
+    a_month timestamp with time zone
+) RETURNS double precision AS $$
+DECLARE
+    a_month timestamp without time zone := to_month(a_month);
+    period_start_time timestamp without time zone := greatest(a_start_time, a_month);
+    period_end_time timestamp without time zone := least(a_end_time, next_month(a_month));
+BEGIN
+    IF a_start_time IS NULL THEN
+        RETURN 1;
+    END IF;
+
+    IF a_end_time < a_start_time THEN
+        RAISE EXCEPTION 'Start date "%" MUST NOT be greater than the end date "%"', a_start_time, a_end_time;
+    END IF;
+
+    RETURN
+        (EXTRACT(EPOCH FROM period_end_time) - EXTRACT(EPOCH FROM period_start_time))
+            /
+        seconds_in_month(a_month);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION quantity2seconds (a_quantity double precision, a_month timestamp with time zone) RETURNS integer AS $$
+    SELECT round(a_quantity*seconds_in_month(a_month))::integer;
+$$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp with time zone) RETURNS integer AS $$
     SELECT round($1*days_in_month($2))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
