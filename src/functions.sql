@@ -835,9 +835,9 @@ CREATE OR REPLACE FUNCTION days2quantity (a_day timestamp with time zone,a_month
     END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION fraction_of_month (
-    a_start_time timestamp with time zone,
+    a_start_time timestamp without time zone,
     a_end_time timestamp without time zone,
-    a_month timestamp with time zone
+    a_month timestamp without time zone
 ) RETURNS double precision AS $$
 DECLARE
     a_month timestamp without time zone := to_month(a_month);
