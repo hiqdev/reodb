@@ -858,10 +858,10 @@ BEGIN
         seconds_in_month(a_month);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
-CREATE OR REPLACE FUNCTION quantity2seconds (a_quantity double precision, a_month timestamp with time zone) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION quantity2seconds (a_quantity double precision, a_month timestamp without time zone) RETURNS integer AS $$
     SELECT round(a_quantity*seconds_in_month(a_month))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp with time zone) RETURNS integer AS $$
+CREATE OR REPLACE FUNCTION quantity2days (a_quantity double precision,a_month timestamp without time zone) RETURNS integer AS $$
     SELECT round($1*days_in_month($2))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
