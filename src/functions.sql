@@ -2041,7 +2041,7 @@ CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
     SELECT ref_id($1,top_ref_id('tag'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION class_tag_id (a_class text,a_name text) RETURNS integer AS $$
-    SELECT obj_id FROM ref WHERE name=$2 AND type_id($1) IN (obj_id,_id);
+    SELECT obj_id FROM zref WHERE name=$2 AND ztype_id($1) IN (obj_id,_id);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION set_tag (a_obj_id integer,a_tag_id integer) RETURNS integer AS $$
     INSERT INTO tag (obj_id,tag_id) VALUES ($1,$2) RETURNING id;
