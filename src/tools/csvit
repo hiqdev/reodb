@@ -1,4 +1,4 @@
 #!/bin/sh
 # CSV It
 
-psql -X -d $1 -q -A -F ',' -f $2
+psql -X --pset footer -d $1 -q -A -F ';' -f $2
