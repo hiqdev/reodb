@@ -2,7 +2,6 @@
 
 namespace hiqdev\reodb\doctrine2;
 
-use Doctrine\DBAL\Driver\PDOConnection;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 use Exception;
@@ -18,14 +17,14 @@ abstract class FileBasedMigration extends AbstractMigration
     /**
      * @var string[]
      */
-    protected $importFiles = [];
+    protected array $importFiles = [];
 
     /**
      * @return string the dir with files
      */
     abstract public function getFilesDir(): string;
 
-    public function up(Schema $schema)
+    public function up(Schema $schema): void
     {
         $this->addSql('SELECT true;');
 
@@ -40,13 +39,12 @@ abstract class FileBasedMigration extends AbstractMigration
 
     protected function applyMigrationFile($filename)
     {
-        /** @var PDOConnection $pdoConnection */
-        $pdoConnection = $this->connection->getWrappedConnection();
+        $pdoConnection = $this->connection->getNativeConnection();
 
         $attr_emulate_prepares = $pdoConnection->getAttribute(PDO::ATTR_EMULATE_PREPARES);
         $pdoConnection->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 
-        $this->version->getConfiguration()->getOutputWriter()->write(
+        $this->write(
             "\n" . sprintf('  <info>++</info> applying <comment>%s</comment>', $filename) . "\n"
         );
 
@@ -54,7 +52,7 @@ abstract class FileBasedMigration extends AbstractMigration
         $pdoConnection->setAttribute(PDO::ATTR_EMULATE_PREPARES, $attr_emulate_prepares);
     }
 
-    public function down(Schema $schema)
+    public function down(Schema $schema): void
     {
         throw new Exception('Down is not supported for file based migration. Sorry!');
     }

@@ -6,6 +6,11 @@ use hiqdev\reodb\doctrine2\FileBasedMigration;
 
 class Version20181108143000 extends FileBasedMigration
 {
+    public function getDescription(): string
+    {
+        return "Import basic table structure, functions and references from files " . implode(', ', $this->importFiles);
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -14,7 +19,7 @@ class Version20181108143000 extends FileBasedMigration
         return \dirname(__DIR__, 2) . '/src';
     }
 
-    protected $importFiles = [
+    protected array $importFiles = [
         'create.sql',
         'zero_insert.sql',
         'alter.sql',
