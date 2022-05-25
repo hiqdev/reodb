@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace <namespace>;
 
 use Doctrine\DBAL\Schema\Schema;
-use hiqdev\reodb\doctrine2\BaseMigration;
+use Doctrine\Migrations\AbstractMigration;
 
-final class <className> extends BaseMigration
+final class <className> extends AbstractMigration
 {
+    use \hiqdev\reodb\doctrine2\BatchSqlTrait;
+
     public function getDescription(): string
     {
         return '';
