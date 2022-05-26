@@ -9,10 +9,10 @@ trait BatchSqlTrait
 {
     protected bool $attrEmulatePrepares;
 
-    public function bachSql(string $sql): void
+    public function batchSql(string $sql): void
     {
         $this->enableBatchSql();
-        $this->AddSql($sql);
+        $this->addSql($sql);
         $this->disableBatchSql();
     }
 
