@@ -858,6 +858,33 @@ BEGIN
         seconds_in_month(a_month);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION progress_ratio_between_dates (
+    a_start_time timestamp without time zone,
+    a_end_time timestamp without time zone,
+    a_position timestamp without time zone
+) RETURNS double precision AS $$
+DECLARE
+    duration_seconds double precision;
+BEGIN
+    IF a_start_time IS NULL OR a_end_time IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    IF a_end_time < a_start_time THEN
+        RAISE EXCEPTION 'Start date "%" MUST NOT be greater than the end date "%"', a_start_time, a_end_time;
+    END IF;
+
+    duration_seconds := EXTRACT(EPOCH FROM a_end_time) - EXTRACT(EPOCH FROM a_start_time);
+    IF duration_seconds = 0 THEN
+        RETURN 1;
+    END IF;
+
+    RETURN greatest(
+        least((EXTRACT(EPOCH FROM a_position) - EXTRACT(EPOCH FROM a_start_time)) / duration_seconds, 1),
+        0
+    );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION quantity2seconds (a_quantity double precision, a_month timestamp without time zone) RETURNS integer AS $$
     SELECT round(a_quantity*seconds_in_month(a_month))::integer;
 $$ LANGUAGE sql IMMUTABLE STRICT;
