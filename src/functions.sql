@@ -1298,10 +1298,10 @@ $$ LANGUAGE sql IMMUTABLE STRICT;
 -- TYPE
 ----------------------------
 CREATE OR REPLACE FUNCTION type_id (a_ref text) RETURNS integer AS $$
-    SELECT ref_id($1,top_ref_id('type'));
+    SELECT ref_id(a_ref, top_ref_id('type'));
 $$ LANGUAGE sql IMMUTABLE STRICT;
-CREATE OR REPLACE FUNCTION type_id (a_parent text,a_ref text) RETURNS integer AS $$
-    SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('type',$1);
+CREATE OR REPLACE FUNCTION type_id (a_parent text, a_ref text) RETURNS integer AS $$
+    SELECT ref_id(a_ref, type_id(a_parent));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_id (a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('type',$1,$2);
