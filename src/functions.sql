@@ -1235,12 +1235,10 @@ CREATE OR REPLACE FUNCTION ref_g2name (a_obj_id integer) RETURNS text AS $$
     WHERE       zt.obj_id = a_obj_id
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT CASE WHEN _id=0 THEN name ELSE ref_full_name(_id)||','||name END
-    FROM ref WHERE obj_id=$1;
+    SELECT name FROM ref_full_name WHERE obj_id=a_obj_id and parent_id=0;
 $$ LANGUAGE sql STABLE STRICT;
-CREATE OR REPLACE FUNCTION ref_full_name (a_parent_id integer,a_obj_id integer) RETURNS text AS $$
-    SELECT CASE WHEN _id=0 OR _id=$2 THEN name ELSE ref_full_name(_id,$2)||','||name END
-    FROM ref WHERE obj_id=$1;
+CREATE OR REPLACE FUNCTION ref_full_name (a_obj_id integer, a_parent_id integer) RETURNS text AS $$
+    SELECT name FROM ref_full_name WHERE obj_id=a_obj_id AND parent_id=a_parent_id;
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION set_ref (a_no integer,a_ref text,a_label text,a_descr text) RETURNS integer AS $$
 DECLARE
