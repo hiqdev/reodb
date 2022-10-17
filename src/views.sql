@@ -30,13 +30,13 @@ CREATE OR REPLACE VIEW state_h AS
 
 CREATE OR REPLACE VIEW ref_full_name AS
     WITH RECURSIVE cte AS (
-        SELECT          z.obj_id, z._id, z.name, 0 as level, z._id as parent_id
+        SELECT          z.obj_id, z._id, z.name, z.label, z.no, 0 as level, z._id as parent_id
         FROM            ref z
         LEFT OUTER JOIN ref o ON o._id = z.obj_id
 
         UNION
 
-        SELECT          f.obj_id, f._id, z.name || ',' || f.name, f.level + 1, z._id as parent_id
+        SELECT          f.obj_id, f._id, z.name || ',' || f.name, z.label, z.no, f.level + 1, z._id as parent_id
         FROM            ref z
         INNER JOIN cte  f ON f.parent_id = z.obj_id AND f.parent_id != 0
     )
