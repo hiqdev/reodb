@@ -36,7 +36,7 @@ CREATE OR REPLACE VIEW ref_full_name AS
 
         UNION
 
-        SELECT          f.obj_id, f._id, z.name || ',' || f.name, z.label, z.no, f.level + 1, z._id as parent_id
+        SELECT          f.obj_id, f._id, z.name || ',' || f.name, f.label, f.no, f.level + 1, z._id as parent_id
         FROM            ref z
         INNER JOIN cte  f ON f.parent_id = z.obj_id AND f.parent_id != 0
     )
