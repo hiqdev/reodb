@@ -949,6 +949,32 @@ $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION to_tb1024 (double precision) RETURNS numeric AS $$
     SELECT trunc(coalesce($1::numeric/1099511627776,0),3);
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_unit1000 (unit text, amount double precision) RETURNS numeric AS $$
+    SELECT  CASE lower(unit)
+            WHEN 'kb'   THEN to_kb1000(amount)
+            WHEN 'mb'   THEN to_mb1000(amount)
+            WHEN 'gb'   THEN to_gb1000(amount)
+            WHEN 'tb'   THEN to_tb1000(amount)
+            WHEN 'kbps' THEN to_kb1000(amount)
+            WHEN 'mbps' THEN to_mb1000(amount)
+            WHEN 'gbps' THEN to_gb1000(amount)
+            WHEN 'tbps' THEN to_tb1000(amount)
+            ELSE amount
+    END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION to_unit1024 (unit text, amount double precision) RETURNS numeric AS $$
+    SELECT  CASE lower(unit)
+            WHEN 'kb'   THEN to_kb1024(amount)
+            WHEN 'mb'   THEN to_mb1024(amount)
+            WHEN 'gb'   THEN to_gb1024(amount)
+            WHEN 'tb'   THEN to_tb1024(amount)
+            WHEN 'kbps' THEN to_kb1024(amount)
+            WHEN 'mbps' THEN to_mb1024(amount)
+            WHEN 'gbps' THEN to_gb1024(amount)
+            WHEN 'tbps' THEN to_tb1024(amount)
+            ELSE amount
+    END;
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TO/FROM CENTS
