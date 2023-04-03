@@ -975,6 +975,22 @@ CREATE OR REPLACE FUNCTION to_unit1024 (unit text, amount double precision) RETU
             ELSE amount
     END;
 $$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION convert_units1000 (amount double precision, src text, dst text) RETURNS numeric AS $$
+    WITH factors AS (
+        SELECT 'kb' AS unit, 1e3::numeric as factor UNION ALL
+        SELECT 'mb',    1e6                         UNION ALL
+        SELECT 'gb',    1e9                         UNION ALL
+        SELECT 'tb',    1e12                        UNION ALL
+        SELECT 'kbps',  1e3                         UNION ALL
+        SELECT 'mbps',  1e6                         UNION ALL
+        SELECT 'gbps',  1e9                         UNION ALL
+        SELECT 'tbps',  1e12
+    )
+    SELECT trunc(coalesce(amount::numeric, 0)*s.factor / d.factor, 3)
+    FROM    factors     s
+    JOIN    factors     d ON d.unit = lower(dst)
+    WHERE   s.unit = lower(src)
+$$ LANGUAGE sql IMMUTABLE CALLED ON NULL INPUT;
 
 ----------------------------
 -- TO/FROM CENTS
