@@ -15,6 +15,35 @@ CREATE OR REPLACE VIEW ref_h AS
     FROM        ref r
     ORDER BY    name
 ;
+DROP VIEW IF EXISTS ref_full_name_view CASCADE;
+CREATE OR REPLACE VIEW zref_full_name_view AS
+    WITH RECURSIVE cte AS (
+        SELECT          z.obj_id, z._id, z.name, z.label, z.no, 0 as level, z._id as parent_id
+        FROM            zref z
+        LEFT OUTER JOIN zref o ON o._id = z.obj_id
+
+        UNION
+
+        SELECT          f.obj_id, f._id, z.name || ',' || f.name, f.label, f.no, f.level + 1, z._id as parent_id
+        FROM            zref z
+        INNER JOIN cte  f ON f.parent_id = z.obj_id AND f.parent_id != 0
+    )
+    SELECT  *
+    FROM    cte
+;
+DROP MATERIALIZED VIEW IF EXISTS zref_full_name_mat CASCADE;
+CREATE MATERIALIZED VIEW zref_full_name_mat AS
+    SELECT * FROM zref_full_name_view
+;
+DROP VIEW IF EXISTS zref_full_name CASCADE;
+CREATE VIEW zref_full_name AS
+    SELECT * FROM zref_full_name_mat
+;
+CREATE INDEX   zref_full_name_parent_id_idx         ON zref_full_name_mat (parent_id);
+CREATE INDEX   zref_full_name_parent_id_name_idx    ON zref_full_name_mat (parent_id, name);
+CREATE INDEX   zref_full_name_parent_id_obj_id_key  ON zref_full_name_mat (parent_id, obj_id);
+CREATE INDEX   zref_full_name_parent_id__id_key     ON zref_full_name_mat (parent_id, _id);
+CREATE UNIQUE INDEX zref_full_name_pkey             ON zref_full_name_mat (obj_id, parent_id, name);
 
 CREATE OR REPLACE VIEW class_h AS
     SELECT * FROM ref_h WHERE name like 'class%';

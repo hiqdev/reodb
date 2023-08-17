@@ -1306,6 +1306,13 @@ $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
 CREATE OR REPLACE FUNCTION set_ref (a_ref text,a_label text) RETURNS integer AS $$
     SELECT set_ref(NULL,$1,$2,NULL);
 $$ LANGUAGE sql VOLATILE CALLED ON NULL INPUT;
+CREATE OR REPLACE FUNCTION zref_full_name (a_obj_id integer) RETURNS text AS $$
+    SELECT name FROM zref_full_name WHERE obj_id=a_obj_id AND parent_id=0
+$$ LANGUAGE sql STABLE STRICT;
+CREATE OR REPLACE FUNCTION zref_full_name (a_obj_id integer,a_parent_id integer) RETURNS text AS $$
+    SELECT name FROM zref_full_name WHERE obj_id=a_obj_id and parent_id=a_parent_id
+$$ LANGUAGE sql STABLE STRICT;
+
 
 ----------------------------
 -- CLASS
