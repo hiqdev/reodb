@@ -231,3 +231,9 @@ CREATE AGGREGATE last (timestamp,text) (
     SFUNC = last_state,
     FINALFUNC = last_final
 );
+
+CREATE AGGREGATE array_cat_agg(anycompatiblearray) (
+    SFUNC     = array_cat,
+    STYPE     = anycompatiblearray,
+    INITCOND  = '{}'
+);
