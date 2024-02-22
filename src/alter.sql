@@ -17,6 +17,8 @@ ALTER TABLE ONLY link               ADD CONSTRAINT link_obj_id_pkey             
 ALTER TABLE ONLY obj                ADD CONSTRAINT obj_class_id_fkey                    FOREIGN KEY (class_id)  REFERENCES ref (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        obj_class_id_idx                                    ON obj (class_id);
+CREATE INDEX                        obj_name_gin_trgm_idx                               ON obj USING gin (name gin_trgm_ops);
+CREATE INDEX                        obj_label_gin_trgm_idx                              ON obj USING gin (label gin_trgm_ops);
 
 -- REF
 ALTER TABLE ONLY ref                ADD CONSTRAINT ref_name__id_uniq                    UNIQUE (name,_id);
