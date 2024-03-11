@@ -101,7 +101,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_before_change_trigger () RETURNS "trigger" AS $$
 BEGIN
     IF TG_OP='DELETE' THEN
-        IF ref_name(OLD.state_id) IN ('deleted', 'temporary') THEN
+        IF ref_name(OLD.state_id) IN ('deleted', 'failed', 'temporary') THEN
             EXECUTE 'INSERT INTO old_'||TG_RELNAME||' SELECT now(),'''||TG_OP||''', ($1).* ' USING OLD;
             RETURN OLD;
         ELSE
