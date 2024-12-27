@@ -5,7 +5,7 @@ SELECT      'REDALERT too long queries',
 FROM        pg_stat_activity
 WHERE       state != 'idle'
         AND query NOT LIKE 'autovacuum: VACUUM % (to prevent wraparound)'
-        AND query not LIKE 'START_REPLICATION SLOT %'
+        AND query not LIKE 'START_REPLICATION%'
         AND query_start + '2minute' < now()
         AND query NOT IN (SELECT query FROM allowed_long_query)
 ORDER BY    duration DESC
