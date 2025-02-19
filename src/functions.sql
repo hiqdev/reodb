@@ -127,6 +127,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+-- ARRAY
+CREATE FUNCTION array_distinct(anyarray) RETURNS anyarray AS $$
+  SELECT array_agg(DISTINCT x) FROM unnest($1) t(x);
+$$ LANGUAGE SQL IMMUTABLE;
 
 -- CJOIN
 CREATE OR REPLACE FUNCTION cjoin (a_strs text[]) RETURNS text AS $$
