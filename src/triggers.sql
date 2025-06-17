@@ -343,3 +343,74 @@ CREATE TRIGGER reodb_after_update_trigger           AFTER   UPDATE  ON link     
 CREATE TRIGGER reodb_before_change_trigger  BEFORE UPDATE OR DELETE ON link         FOR EACH ROW EXECUTE PROCEDURE reodb_before_change_trigger();
 CREATE TRIGGER reodb_after_delete_trigger           AFTER   DELETE  ON link         FOR EACH ROW EXECUTE PROCEDURE reodb_after_delete_trigger();
 
+CREATE OR REPLACE FUNCTION reodb_audit_prevent_changes_without_context()
+    RETURNS trigger AS $$
+BEGIN
+    -- Ensure all required session variables are set
+    IF current_setting('audit.app_client_id', true) IS NULL
+        OR current_setting('audit.app_client_login', true) IS NULL
+        OR current_setting('audit.app_request_ip', true) IS NULL
+        OR current_setting('audit.trace_id', true) IS NULL
+       OR current_setting('audit.app_name', true) IS NULL
+    THEN
+        RAISE EXCEPTION 'Audit context variables not set: client_id, login, ip, trace_id, app_name are required';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION reodb_audit_notify()
+    RETURNS trigger AS $$
+DECLARE
+payload JSONB;
+    raw JSONB;
+    payload_text TEXT;
+    compressed BYTEA;
+    a_field_name text;
+    a_new_column text;
+    a_old_column text;
+BEGIN
+
+SELECT INTO a_field_name
+FROM information_schema.columns
+WHERE table_name=TG_TABLE_NAME::regclass::text AND (column_name = 'id' OR column_name = 'obj_id');
+SELECT INTO a_new_column CONCAT('NEW','.',a_field_name);
+SELECT INTO a_old_column CONCAT('OLD','.',a_field_name);
+
+raw := jsonb_build_object(
+            'v', 1,
+            'schema', TG_TABLE_SCHEMA::text,
+            'table', TG_TABLE_NAME::regclass::text,
+            'pk', (TG_ARGV[0] = CONCAT(a_field_name, '=', COALESCE(a_old_column, a_new_column))),
+            'op', TG_OP::text,
+            'ts', to_jsonb(current_timestamp AT TIME ZONE 'UTC'),
+            'user', jsonb_build_object(
+                    'id', current_setting('audit.app_client_id')::int,
+                    'login', current_setting('audit.app_client_login'),
+                    'impersonated_id', (current_setting('audit.app_impersonated_client_id', true))::int,
+                    'impersonated_login', current_setting('audit.app_impersonated_client_login', true)
+            ),
+            'request', jsonb_build_object(
+                    'ip', current_setting('audit.app_request_ip', true),
+                    'log_id', (current_setting('audit.app_log_id', true))::bigint,
+                    'trace_id', current_setting('audit.trace_id', true),
+                    'app_name', current_setting('audit.app_name'),
+                    'app_request_run_id', current_setting('audit.app_request_run_id', true)
+            ),
+            'old', CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) ELSE NULL END,
+            'new', CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) ELSE NULL END
+           );
+
+    payload := raw;
+
+    payload_text := payload::TEXT;
+    IF octet_length(payload_text) > 8000 THEN
+        compressed := gzip(payload_text::BYTEA);
+        PERFORM pg_notify('audit_channel', encode(compressed, 'base64'));
+ELSE
+        PERFORM pg_notify('audit_channel', payload_text);
+END IF;
+
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
