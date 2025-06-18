@@ -351,7 +351,7 @@ BEGIN
         OR current_setting('audit.app_client_login', true) IS NULL
         OR current_setting('audit.app_request_ip', true) IS NULL
         OR current_setting('audit.trace_id', true) IS NULL
-       OR current_setting('audit.app_name', true) IS NULL
+        OR current_setting('audit.app_name', true) IS NULL
     THEN
         RAISE EXCEPTION 'Audit context variables not set: client_id, login, ip, trace_id, app_name are required';
     END IF;
@@ -362,26 +362,32 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION reodb_audit_notify()
     RETURNS trigger AS $$
 DECLARE
-payload JSONB;
+    payload JSONB;
     raw JSONB;
     payload_text TEXT;
     compressed BYTEA;
-    a_field_name text;
-    a_new_column text;
-    a_old_column text;
+    a_new_data jsonb;
+    a_old_data jsonb;
+    pk TEXT;
 BEGIN
 
-SELECT INTO a_field_name
-FROM information_schema.columns
-WHERE table_name=TG_TABLE_NAME::regclass::text AND (column_name = 'id' OR column_name = 'obj_id');
-SELECT INTO a_new_column CONCAT('NEW','.',a_field_name);
-SELECT INTO a_old_column CONCAT('OLD','.',a_field_name);
+    a_new_data = to_jsonb(NEW);
+    a_old_data = to_jsonb(OLD);
+    IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
+        pk = CONCAT('id=',COALESCE(NEW.id, OLD.id));
+    END IF;
+    IF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
+        pk = CONCAT('obj_id=',COALESCE(NEW.obj_id, OLD.obj_id));
+    END IF;
+    IF pk IS NULL THEN
+        RAISE EXCEPTION 'pk is absent in %', TG_TABLE_NAME::regclass::text;
+    END IF;
 
-raw := jsonb_build_object(
+    raw := jsonb_build_object(
             'v', 1,
             'schema', TG_TABLE_SCHEMA::text,
             'table', TG_TABLE_NAME::regclass::text,
-            'pk', (TG_ARGV[0] = CONCAT(a_field_name, '=', COALESCE(a_old_column, a_new_column))),
+            'pk', pk,
             'op', TG_OP::text,
             'ts', to_jsonb(current_timestamp AT TIME ZONE 'UTC'),
             'user', jsonb_build_object(
@@ -397,8 +403,8 @@ raw := jsonb_build_object(
                     'app_name', current_setting('audit.app_name'),
                     'app_request_run_id', current_setting('audit.app_request_run_id', true)
             ),
-            'old', CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) ELSE NULL END,
-            'new', CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) ELSE NULL END
+            'old', CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN a_old_data ELSE NULL END,
+            'new', CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN a_new_data ELSE NULL END
            );
 
     payload := raw;
@@ -407,10 +413,10 @@ raw := jsonb_build_object(
     IF octet_length(payload_text) > 8000 THEN
         compressed := gzip(payload_text::BYTEA);
         PERFORM pg_notify('audit_channel', encode(compressed, 'base64'));
-ELSE
+    ELSE
         PERFORM pg_notify('audit_channel', payload_text);
-END IF;
+    END IF;
 
-RETURN NEW;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
