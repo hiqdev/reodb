@@ -343,17 +343,21 @@ CREATE TRIGGER reodb_after_update_trigger           AFTER   UPDATE  ON link     
 CREATE TRIGGER reodb_before_change_trigger  BEFORE UPDATE OR DELETE ON link         FOR EACH ROW EXECUTE PROCEDURE reodb_before_change_trigger();
 CREATE TRIGGER reodb_after_delete_trigger           AFTER   DELETE  ON link         FOR EACH ROW EXECUTE PROCEDURE reodb_after_delete_trigger();
 
+CREATE OR REPLACE FUNCTION gzip_compress(text text) RETURNS bytea AS $$
+  import gzip
+  text_bytes = text.encode('utf-8')
+  return gzip.compress(text_bytes)
+$$ LANGUAGE plpython3u;
+
 CREATE OR REPLACE FUNCTION reodb_audit_prevent_changes_without_context()
     RETURNS trigger AS $$
 BEGIN
     -- Ensure all required session variables are set
     IF current_setting('audit.app_client_id', true) IS NULL
         OR current_setting('audit.app_client_login', true) IS NULL
-        OR current_setting('audit.app_request_ip', true) IS NULL
-        OR current_setting('audit.trace_id', true) IS NULL
         OR current_setting('audit.app_name', true) IS NULL
     THEN
-        RAISE EXCEPTION 'Audit context variables not set: client_id, login, ip, trace_id, app_name are required';
+        RAISE EXCEPTION 'Audit context variables not set: client_id, login, app_name are required';
     END IF;
     RETURN NEW;
 END;
@@ -374,10 +378,10 @@ BEGIN
     a_new_data = to_jsonb(NEW);
     a_old_data = to_jsonb(OLD);
     IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
-        pk = CONCAT('id=',COALESCE(NEW.id, OLD.id));
+        pk = COALESCE(NEW.id, OLD.id);
     END IF;
     IF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
-        pk = CONCAT('obj_id=',COALESCE(NEW.obj_id, OLD.obj_id));
+        pk = COALESCE(NEW.obj_id, OLD.obj_id);
     END IF;
     IF pk IS NULL THEN
         RAISE EXCEPTION 'pk is absent in %', TG_TABLE_NAME::regclass::text;
@@ -411,7 +415,7 @@ BEGIN
 
     payload_text := payload::TEXT;
     IF octet_length(payload_text) > 8000 THEN
-        compressed := gzip(payload_text::BYTEA);
+        SELECT gzip_compress(payload_text) INTO compressed;
         PERFORM pg_notify('audit_channel', encode(compressed, 'base64'));
     ELSE
         PERFORM pg_notify('audit_channel', payload_text);
