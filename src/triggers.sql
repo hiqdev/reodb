@@ -360,7 +360,10 @@ BEGIN
         OR current_setting('audit.app_name', true) IS NULL
         OR current_setting('audit.app_name', true) = ''
     THEN
-        RAISE EXCEPTION 'Audit context variables not set: client_id, login, app_name are required';
+        RAISE EXCEPTION 'Audit context variables not set: client_id="%", login="%", app_name="%" are required',
+            current_setting('audit.app_client_id', true),
+            current_setting('audit.app_client_login', true),
+            current_setting('audit.app_name', true);
     END IF;
     RETURN NEW;
 END;
@@ -400,12 +403,12 @@ BEGIN
         'user', jsonb_build_object(
                 'id', current_setting('audit.app_client_id')::int,
                 'login', current_setting('audit.app_client_login'),
-                'impersonated_id', (current_setting('audit.app_impersonated_client_id', true))::int,
+                'impersonated_id', str2num(current_setting('audit.app_impersonated_client_id', true), null)::int,
                 'impersonated_login', current_setting('audit.app_impersonated_client_login', true)
         ),
         'request', jsonb_build_object(
                 'ip', current_setting('audit.app_request_ip', true),
-                'log_id', (current_setting('audit.app_log_id', true))::bigint,
+                'log_id', str2num(current_setting('audit.app_log_id', true), null)::bigint,
                 'trace_id', current_setting('audit.trace_id', true),
                 'app_name', current_setting('audit.app_name'),
                 'app_request_run_id', current_setting('audit.app_request_run_id', true)
