@@ -404,7 +404,7 @@ BEGIN
                 'id', current_setting('audit.app_client_id')::int,
                 'login', current_setting('audit.app_client_login'),
                 'impersonated_id', str2num(current_setting('audit.app_impersonated_client_id', true), null)::int,
-                'impersonated_login', current_setting('audit.app_impersonated_client_login', true)
+                'impersonated_login', NULLIF(current_setting('audit.app_impersonated_client_login', true), '')
         ),
         'request', jsonb_build_object(
                 'ip', current_setting('audit.app_request_ip', true),
