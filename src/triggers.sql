@@ -403,12 +403,12 @@ BEGIN
         'user', jsonb_build_object(
                 'id', current_setting('audit.app_client_id')::int,
                 'login', current_setting('audit.app_client_login'),
-                'impersonated_id', str2num(current_setting('audit.app_impersonated_client_id', true), null)::int,
+                'impersonated_id', str2integer(current_setting('audit.app_impersonated_client_id', true))::int,
                 'impersonated_login', NULLIF(current_setting('audit.app_impersonated_client_login', true), '')
         ),
         'request', jsonb_build_object(
                 'ip', current_setting('audit.app_request_ip', true),
-                'log_id', str2num(current_setting('audit.app_log_id', true), null)::bigint,
+                'log_id', str2bigint(current_setting('audit.app_log_id', true)),
                 'trace_id', current_setting('audit.trace_id', true),
                 'app_name', current_setting('audit.app_name'),
                 'app_request_run_id', current_setting('audit.app_request_run_id', true)
