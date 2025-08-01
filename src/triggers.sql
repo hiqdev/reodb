@@ -410,8 +410,8 @@ BEGIN
                 'ip', current_setting('audit.app_request_ip', true),
                 'log_id', str2bigint(current_setting('audit.app_log_id', true)),
                 'trace_id', current_setting('audit.trace_id', true),
-                'app_name', current_setting('audit.app_name'),
-                'app_request_run_id', current_setting('audit.app_request_run_id', true)
+                'app', current_setting('audit.app_name'),
+                'run_id', current_setting('audit.app_request_run_id', true)
         ),
         'old', CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN a_old_data ELSE NULL END,
         'new', CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN a_new_data ELSE NULL END
