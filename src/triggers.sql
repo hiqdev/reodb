@@ -398,7 +398,7 @@ BEGIN
         'schema', TG_TABLE_SCHEMA::text,
         'table', TG_TABLE_NAME::regclass::text,
         'pk', pk,
-        'op', TG_OP::text,
+        'op', lower(TG_OP::text),
         'ts', to_jsonb(current_timestamp AT TIME ZONE 'UTC'),
         'user', jsonb_build_object(
                 'id', current_setting('audit.app_client_id')::int,
