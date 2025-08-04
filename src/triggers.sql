@@ -385,8 +385,7 @@ BEGIN
     a_old_data = to_jsonb(OLD);
     IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
         pk = COALESCE(NEW.id, OLD.id);
-    END IF;
-    IF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
+    ELSIF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
         pk = COALESCE(NEW.obj_id, OLD.obj_id);
     END IF;
     IF pk IS NULL THEN
