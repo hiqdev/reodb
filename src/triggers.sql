@@ -375,8 +375,8 @@ BEGIN
         TG_OP::text,
         TG_TABLE_SCHEMA::text,
         TG_TABLE_NAME::text,
-        to_jsonb(NEW),
-        to_jsonb(OLD)
+        to_jsonb(OLD),
+        to_jsonb(NEW)
     );
 
     RETURN NEW;
