@@ -369,63 +369,39 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION reodb_audit_notify()
-    RETURNS trigger AS $$
-DECLARE
-    payload JSONB;
-    raw JSONB;
-    payload_text TEXT;
-    compressed BYTEA;
-    a_new_data jsonb;
-    a_old_data jsonb;
-    pk TEXT;
+CREATE OR REPLACE FUNCTION reodb_audit_notify_trigger() RETURNS trigger AS $$
 BEGIN
-
-    a_new_data = to_jsonb(NEW);
-    a_old_data = to_jsonb(OLD);
-    IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
-        pk = COALESCE(NEW.id, OLD.id);
-    ELSIF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
-        pk = COALESCE(NEW.obj_id, OLD.obj_id);
-    END IF;
-    IF pk IS NULL THEN
-        RAISE EXCEPTION 'pk is absent in %', TG_TABLE_NAME::regclass::text;
-    END IF;
-
-    raw := jsonb_build_object(
-        'v', 1,
-        'schema', TG_TABLE_SCHEMA::text,
-        'table', TG_TABLE_NAME::regclass::text,
-        'pk', pk,
-        'op', lower(TG_OP::text),
-        'ts', to_jsonb(current_timestamp AT TIME ZONE 'UTC'),
-        'user', jsonb_build_object(
-                'id', current_setting('audit.app_client_id')::int,
-                'login', current_setting('audit.app_client_login'),
-                'impersonated_id', str2integer(current_setting('audit.app_impersonated_client_id', true))::int,
-                'impersonated_login', NULLIF(current_setting('audit.app_impersonated_client_login', true), '')
-        ),
-        'request', jsonb_build_object(
-                'ip', current_setting('audit.app_request_ip', true),
-                'log_id', str2bigint(current_setting('audit.app_log_id', true)),
-                'trace_id', current_setting('audit.trace_id', true),
-                'app', current_setting('audit.app_name'),
-                'run_id', current_setting('audit.app_request_run_id', true)
-        ),
-        'old', CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN a_old_data ELSE NULL END,
-        'new', CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN a_new_data ELSE NULL END
+    PERFORM reodb_audit_notify(
+        TG_OP::text,
+        TG_TABLE_SCHEMA::text,
+        TG_TABLE_NAME::text,
+        to_jsonb(NEW),
+        to_jsonb(OLD)
     );
 
-    payload := raw;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-    payload_text := payload::TEXT;
-    IF octet_length(payload_text) > 8000 THEN
-        SELECT gzip_compress(payload_text) INTO compressed;
-        PERFORM pg_notify('audit_channel', encode(compressed, 'base64'));
-    ELSE
-        PERFORM pg_notify('audit_channel', payload_text);
+CREATE OR REPLACE FUNCTION obj_audit_notify_trigger() RETURNS trigger AS $$
+DECLARE
+    old_jsonb jsonb;
+    new_jsonb jsonb;
+BEGIN
+    old_jsonb := to_jsonb(OLD);
+    new_jsonb := to_jsonb(NEW);
+
+    IF TG_OP = 'UPDATE' AND (old_jsonb - 'update_time') = (new_jsonb - 'update_time') THEN
+        RETURN NEW;
     END IF;
 
+    PERFORM reodb_audit_notify(
+        TG_OP::text,
+        TG_TABLE_SCHEMA::text,
+        TG_TABLE_NAME::text,
+        old_jsonb,
+        new_jsonb
+    );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

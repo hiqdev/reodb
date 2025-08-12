@@ -2390,3 +2390,66 @@ $$ LANGUAGE sql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION pg_has_advisory_lock(a_key bigint) RETURNS BOOLEAN AS $$
 SELECT pg_has_advisory_xact_lock(a_key);
 $$ LANGUAGE sql VOLATILE STRICT;
+
+CREATE OR REPLACE FUNCTION reodb_audit_notify(
+    a_operation text,
+    a_schema_name text,
+    a_table_name text,
+    a_old_data jsonb,
+    a_new_data jsonb
+) RETURNS void AS $$
+DECLARE
+    payload JSONB;
+    raw JSONB;
+    payload_text TEXT;
+    compressed BYTEA;
+    pk TEXT;
+BEGIN
+    IF a_old_data = a_new_data THEN
+        RETURN; -- No changes, nothing to do
+    END IF;
+
+    IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
+        pk = COALESCE(a_new_data->'id', a_old_data->'id');
+    ELSIF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
+        pk = COALESCE(a_new_data->'obj_id', a_old_data->'obj_id');
+    END IF;
+    IF pk IS NULL THEN
+        RAISE EXCEPTION 'pk is absent in %', a_table_name;
+    END IF;
+
+    raw := jsonb_build_object(
+        'v', 1,
+        'schema', a_schema_name,
+        'table', a_table_name,
+        'pk', pk,
+        'op', lower(a_operation),
+        'ts', to_jsonb(current_timestamp AT TIME ZONE 'UTC'),
+        'user', jsonb_build_object(
+                'id', current_setting('audit.app_client_id')::int,
+                'login', current_setting('audit.app_client_login'),
+                'impersonated_id', str2integer(current_setting('audit.app_impersonated_client_id', true))::int,
+                'impersonated_login', NULLIF(current_setting('audit.app_impersonated_client_login', true), '')
+        ),
+        'request', jsonb_build_object(
+                'ip', current_setting('audit.app_request_ip', true),
+                'log_id', str2bigint(current_setting('audit.app_log_id', true)),
+                'trace_id', current_setting('audit.trace_id', true),
+                'app', current_setting('audit.app_name'),
+                'run_id', current_setting('audit.app_request_run_id', true)
+        ),
+        'old', CASE WHEN a_operation IN ('UPDATE','DELETE') THEN a_old_data ELSE NULL END,
+        'new', CASE WHEN a_operation IN ('INSERT','UPDATE') THEN a_new_data ELSE NULL END
+    );
+
+    payload := raw;
+
+    payload_text := payload::TEXT;
+    IF octet_length(payload_text) > 8000 THEN
+        SELECT gzip_compress(payload_text) INTO compressed;
+        PERFORM pg_notify('audit_channel', encode(compressed, 'base64'));
+    ELSE
+        PERFORM pg_notify('audit_channel', payload_text);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
