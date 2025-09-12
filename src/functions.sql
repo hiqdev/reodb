@@ -2400,25 +2400,26 @@ CREATE OR REPLACE FUNCTION reodb_audit_notify(
 ) RETURNS void AS $$
 DECLARE
     payload JSONB;
-    raw JSONB;
     payload_text TEXT;
-    compressed BYTEA;
     pk TEXT;
+    ref_id UUID;
 BEGIN
     IF a_old_data = a_new_data THEN
         RETURN; -- No changes, nothing to do
     END IF;
 
+    -- Detect primary key
     IF (a_new_data->'id' IS NOT NULL OR a_old_data->'id' IS NOT NULL) THEN
-        pk = COALESCE(a_new_data->'id', a_old_data->'id');
+        pk := COALESCE(a_new_data->>'id', a_old_data->>'id');
     ELSIF (a_new_data->'obj_id' IS NOT NULL OR a_old_data->'obj_id' IS NOT NULL) THEN
-        pk = COALESCE(a_new_data->'obj_id', a_old_data->'obj_id');
+        pk := COALESCE(a_new_data->>'obj_id', a_old_data->>'obj_id');
     END IF;
     IF pk IS NULL THEN
         RAISE EXCEPTION 'pk is absent in %', a_table_name;
     END IF;
 
-    raw := jsonb_build_object(
+    -- Build payload
+    payload := jsonb_build_object(
         'v', 1,
         'schema', a_schema_name,
         'table', a_table_name,
@@ -2442,19 +2443,23 @@ BEGIN
         'new', CASE WHEN a_operation IN ('INSERT','UPDATE') THEN a_new_data ELSE NULL END
     );
 
-    payload := raw;
-
     payload_text := payload::TEXT;
-    IF octet_length(payload_text) > 8000 THEN
-        SELECT encode(gzip_compress(payload_text), 'base64') INTO compressed;
-        IF octet_length(compressed::text) >= 8000 THEN
-            RAISE NOTICE 'Skipping notification for % because compressed payload is too large: % bytes', a_table_name, octet_length(compressed);
-            RETURN;
-        END IF;
 
-        PERFORM pg_notify('audit_channel', compressed::text);
-    ELSE
+    -- If payload is small enough, send directly
+    IF octet_length(payload_text) < 8000 THEN
         PERFORM pg_notify('audit_channel', payload_text);
+    ELSE
+        -- Store in history_audit and send reference
+        INSERT INTO history_audit(payload)
+        VALUES (payload)
+        RETURNING id INTO ref_id;
+
+        PERFORM pg_notify(
+            'audit_channel',
+            jsonb_build_object(
+                'ref_id', ref_id
+            )::TEXT
+        );
     END IF;
 END;
 $$ LANGUAGE plpgsql;
