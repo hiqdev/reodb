@@ -2480,5 +2480,5 @@ CREATE OR REPLACE FUNCTION source_id (a_grandparent text,a_parent text,a_ref tex
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION source_id (a_ggparent text,a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
-    SELECT obj_id FROM ref WHERE name=$4 AND _id=ref_id('source', $1,$2);
+    SELECT obj_id FROM ref WHERE name=$4 AND _id=ref_id('source', $1,$2,$3);
 $$ LANGUAGE sql IMMUTABLE STRICT;
