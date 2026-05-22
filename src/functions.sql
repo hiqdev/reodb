@@ -167,15 +167,15 @@ $$ LANGUAGE plpgsql VOLATILE STRICT;
 
 -- SCHEMA
 CREATE OR REPLACE FUNCTION find_primary_key (a_table text, a_namespace text) RETURNS text AS $$
-	SELECT  min(a.attname)
-	FROM	pg_index		i
-	JOIN	pg_class		c ON c.oid = i.indrelid AND c.oid = a_table::regclass
-	JOIN	pg_attribute	a ON a.attrelid = c.oid AND a.attnum = any(i.indkey)
-	JOIN	pg_namespace	n ON n.oid = c.relnamespace AND n.nspname = a_namespace::name
-	WHERE	i.indisprimary
+    SELECT  min(a.attname)
+    FROM    pg_index        i
+    JOIN    pg_class        c ON c.oid = i.indrelid AND c.oid = a_table::regclass
+    JOIN    pg_attribute    a ON a.attrelid = c.oid AND a.attnum = any(i.indkey)
+    JOIN    pg_namespace    n ON n.oid = c.relnamespace AND n.nspname = a_namespace::name
+    WHERE   i.indisprimary
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION find_primary_key (a_table text) RETURNS text AS $$
-	SELECT find_primary_key(a_table, 'public');
+    SELECT find_primary_key(a_table, 'public');
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 -- DIFF
@@ -1863,7 +1863,7 @@ END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 CREATE OR REPLACE FUNCTION set_table_value (a_obj_id integer, a_table text, a_column text, a_value text) RETURNS integer AS $$
 BEGIN
-	RETURN set_table_value(a_obj_id, a_table, a_column, a_value, coalesce(find_primary_key(a_table), 'id'));
+    RETURN set_table_value(a_obj_id, a_table, a_column, a_value, coalesce(find_primary_key(a_table), 'id'));
 END;
 $$ LANGUAGE plpgsql VOLATILE STRICT;
 
@@ -2463,3 +2463,22 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+---------------------------
+--- SOURCE
+---------------------------
+CREATE OR REPLACE FUNCTION source_id (a_source text) RETURNS integer AS $$
+    SELECT ref_id(a_source, top_ref_id('source'));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION source_id (a_parent text, a_ref text) RETURNS integer AS $$
+    SELECT ref_id(a_ref, source_id(a_parent));
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION source_id (a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
+    SELECT obj_id FROM ref WHERE name=$3 AND _id=ref_id('source', $1,$2);
+$$ LANGUAGE sql IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION source_id (a_ggparent text,a_grandparent text,a_parent text,a_ref text) RETURNS integer AS $$
+    SELECT obj_id FROM ref WHERE name=$4 AND _id=ref_id('source', $1,$2,$3);
+$$ LANGUAGE sql IMMUTABLE STRICT;
