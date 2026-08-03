@@ -111,6 +111,7 @@ ALTER TABLE ONLY status             ADD CONSTRAINT status_subject_id_fkey       
 ALTER TABLE ONLY status             ADD CONSTRAINT status_type_id_fkey                  FOREIGN KEY (type_id)   REFERENCES ref (obj_id)
                                                                                         ON UPDATE CASCADE ON DELETE RESTRICT;
 CREATE INDEX                        status_object_id_idx                                ON status (object_id);
-CREATE INDEX                        status_subject_id_idx                               ON status (subject_id) WHERE subject_id is null;
+CREATE INDEX                        status_subject_id_fk_idx                            ON status (subject_id);
 CREATE INDEX                        status_time_idx                                     ON status (time);
+CREATE INDEX                        status_type_object_time_idx                         ON status (type_id, object_id, "time");
 
