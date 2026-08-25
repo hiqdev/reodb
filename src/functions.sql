@@ -1342,14 +1342,14 @@ $$ LANGUAGE sql STABLE STRICT;
 -- SCALAR
 ----------------------------
 CREATE OR REPLACE FUNCTION scalar_id (text) RETURNS integer AS $$
-    SELECT ref_id($1,top_ref_id('scalar'));
+    SELECT ref_id($1,top_ref_id('scalar'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 ----------------------------
 -- TYPE
 ----------------------------
 CREATE OR REPLACE FUNCTION type_id (a_ref text) RETURNS integer AS $$
-    SELECT ref_id(a_ref, top_ref_id('type'));
+    SELECT ref_id(a_ref, top_ref_id('type'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_id (a_parent text, a_ref text) RETURNS integer AS $$
     SELECT ref_id(a_ref, type_id(a_parent));
@@ -1376,14 +1376,14 @@ CREATE OR REPLACE FUNCTION type_ids (a_parent text,a_1 text,a_2 text,a_3 text,a_
     SELECT obj_id FROM ref WHERE _id=type_id($1) AND name IN ($2,$3,$4,$5);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION type_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT ref_full_name($1,top_ref_id('type'));
+    SELECT ref_full_name($1,top_ref_id('type'::text));
 $$ LANGUAGE sql STABLE STRICT;
 
 ----------------------------
 -- STATE
 ----------------------------
 CREATE OR REPLACE FUNCTION state_id (a_name text) RETURNS integer AS $$
-    SELECT ref_id($1,top_ref_id('state'));
+    SELECT ref_id($1,top_ref_id('state'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_id (a_parent text,a_name text) RETURNS integer AS $$
     SELECT obj_id FROM ref WHERE name=$2 AND _id=ref_id('state',$1);
@@ -1395,13 +1395,13 @@ CREATE OR REPLACE FUNCTION state_ids (a_parent text,a_names text) RETURNS intege
     SELECT ref_ids(ref_id('state',$1),$2);
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION state_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT ref_full_name($1,top_ref_id('state'));
+    SELECT ref_full_name($1,top_ref_id('state'::text));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION prev_state_id (a_obj_id integer) RETURNS integer AS $$
     SELECT      s.type_id
     FROM        status      s
     JOIN        ref     t ON t.obj_id=s.type_id AND s.object_id=$1
-    JOIN        ref     y ON y.obj_id=t._id AND y._id=top_ref_id('state')
+    JOIN        ref     y ON y.obj_id=t._id AND y._id=top_ref_id('state'::text)
     ORDER BY    s.time DESC
     LIMIT       1
     OFFSET      1;
@@ -1411,13 +1411,13 @@ $$ LANGUAGE sql STABLE STRICT;
 -- STATUS
 ----------------------------
 CREATE OR REPLACE FUNCTION status_id (a_name text) RETURNS integer AS $$
-    SELECT ref_id(a_name, top_ref_id('status'));
+    SELECT ref_id(a_name, top_ref_id('status'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_id (a_parent text, a_name text) RETURNS integer AS $$
     SELECT ref_id(a_name, status_id(a_parent));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION status_full_name (a_obj_id integer) RETURNS text AS $$
-    SELECT ref_full_name($1,top_ref_id('status'));
+    SELECT ref_full_name($1,top_ref_id('status'::text));
 $$ LANGUAGE sql STABLE STRICT;
 CREATE OR REPLACE FUNCTION get_status (a_obj_id integer,a_type_id integer) RETURNS timestamp AS $$
     SELECT time FROM status WHERE object_id=$1 AND type_id=$2;
@@ -2116,7 +2116,7 @@ $$ LANGUAGE sql STABLE STRICT;
 -- TAG
 ----------------------------
 CREATE OR REPLACE FUNCTION tag_id (a_type text) RETURNS integer AS $$
-    SELECT ref_id($1,top_ref_id('tag'));
+    SELECT ref_id($1,top_ref_id('tag'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 CREATE OR REPLACE FUNCTION class_tag_id (a_class text,a_name text) RETURNS integer AS $$
 DECLARE
@@ -2468,7 +2468,7 @@ $$ LANGUAGE plpgsql;
 --- SOURCE
 ---------------------------
 CREATE OR REPLACE FUNCTION source_id (a_source text) RETURNS integer AS $$
-    SELECT ref_id(a_source, top_ref_id('source'));
+    SELECT ref_id(a_source, top_ref_id('source'::text));
 $$ LANGUAGE sql IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION source_id (a_parent text, a_ref text) RETURNS integer AS $$
