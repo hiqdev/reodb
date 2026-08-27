@@ -43,6 +43,8 @@ abstract class FileBasedMigration extends AbstractMigration
 
         $attr_emulate_prepares = $pdoConnection->getAttribute(PDO::ATTR_EMULATE_PREPARES);
         $pdoConnection->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+        $pdoConnection->exec('SET search_path = public, pg_catalog;');
+        $pdoConnection->exec('SET check_function_bodies = false;');
 
         $this->write(
             "\n" . sprintf('  <info>++</info> applying <comment>%s</comment>', $filename) . "\n"
