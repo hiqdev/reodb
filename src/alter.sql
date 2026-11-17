@@ -114,4 +114,5 @@ CREATE INDEX                        status_object_id_idx                        
 CREATE INDEX                        status_subject_id_fk_idx                            ON status (subject_id);
 CREATE INDEX                        status_time_idx                                     ON status (time);
 CREATE INDEX                        status_type_object_time_idx                         ON status (type_id, object_id, "time");
+CREATE INDEX                        status_type_time_idx                                ON status (type_id, "time") INCLUDE (object_id);
 
